@@ -1,0 +1,89 @@
+import { useState, useEffect } from 'react';
+import { authService } from '../utils/supabase';
+import { useTheme } from '../contexts/ThemeContext';
+import Login from '../components/Login';
+import Gerente from '../components/Gerente';
+import Vendedor from '../components/Vendedor';
+import Caixa from '../components/Caixa';
+
+export default function Home() {
+  const { theme } = useTheme();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      setUser(currentUser);
+    }
+    setLoading(false);
+  }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+  };
+
+  const handleLogout = async () => {
+    await authService.signOut();
+    setUser(null);
+  };
+
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        background: theme.background,
+        color: theme.text,
+        fontSize: '1.5rem'
+      }}>
+        Carregando...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  // Renderizar componente baseado no tipo de usuário
+  switch (user.tipo) {
+    case 'gerente':
+      return <Gerente user={user} onLogout={handleLogout} />;
+    case 'vendedor':
+      return <Vendedor user={user} onLogout={handleLogout} />;
+    case 'caixa':
+      return <Caixa user={user} onLogout={handleLogout} />;
+    default:
+      return (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          background: theme.background,
+          color: theme.text,
+          flexDirection: 'column',
+          gap: '20px'
+        }}>
+          <h1>Tipo de usuário não reconhecido</h1>
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: '12px 24px',
+              background: theme.accent,
+              color: theme.background,
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
+          >
+            Voltar ao Login
+          </button>
+        </div>
+      );
+  }
+}
