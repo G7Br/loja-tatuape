@@ -5,7 +5,42 @@ const versiculos = [
   { texto: "O Senhor é o meu pastor; de nada terei falta.", referencia: "Salmos 23:1" },
   { texto: "Posso todas as coisas naquele que me fortalece.", referencia: "Filipenses 4:13" },
   { texto: "Confie no Senhor de todo o seu coração e não se apoie em seu próprio entendimento.", referencia: "Provérbios 3:5" },
-  { texto: "Busquem, pois, em primeiro lugar o Reino de Deus e a sua justiça.", referencia: "Mateus 6:33" }
+  { texto: "Busquem, pois, em primeiro lugar o Reino de Deus e a sua justiça.", referencia: "Mateus 6:33" },
+  { texto: "O Senhor é a minha luz e a minha salvação; de quem terei medo?", referencia: "Salmos 27:1" },
+  { texto: "Entrega o teu caminho ao Senhor; confia nele, e ele tudo fará.", referencia: "Salmos 37:5" },
+  { texto: "Deus é o nosso refúgio e fortaleza, socorro bem presente na angústia.", referencia: "Salmos 46:1" },
+  { texto: "O Senhor lutará por vocês; tão somente acalmem-se.", referencia: "Êxodo 14:14" },
+  { texto: "O amor jamais acaba.", referencia: "1 Coríntios 13:8" },
+  { texto: "O Senhor está perto de todos os que o invocam.", referencia: "Salmos 145:18" },
+  { texto: "Sede fortes e corajosos. Não temais, porque o Senhor, vosso Deus, vai convosco.", referencia: "Deuteronômio 31:6" },
+  { texto: "Alegrai-vos sempre no Senhor.", referencia: "Filipenses 4:4" },
+  { texto: "O Senhor firmará os passos daquele que dele se agrada.", referencia: "Salmos 37:23" },
+  { texto: "O choro pode durar uma noite, mas a alegria vem pela manhã.", referencia: "Salmos 30:5" },
+  { texto: "O meu Deus suprirá todas as necessidades de vocês, de acordo com as suas riquezas em glória.", referencia: "Filipenses 4:19" },
+  { texto: "Se Deus é por nós, quem será contra nós?", referencia: "Romanos 8:31" },
+  { texto: "O Senhor é bom, um refúgio em tempos de angústia.", referencia: "Naum 1:7" },
+  { texto: "Aquele que habita no esconderijo do Altíssimo descansará à sombra do Todo-Poderoso.", referencia: "Salmos 91:1" },
+  { texto: "Mil poderão cair ao seu lado, dez mil à sua direita, mas nada o atingirá.", referencia: "Salmos 91:7" },
+  { texto: "O Senhor te guardará de todo mal.", referencia: "Salmos 121:7" },
+  { texto: "O Senhor é bom para com todos.", referencia: "Salmos 145:9" },
+  { texto: "Nada é impossível para Deus.", referencia: "Lucas 1:37" },
+  { texto: "Clame a mim e eu responderei.", referencia: "Jeremias 33:3" },
+  { texto: "A fé é a certeza daquilo que esperamos.", referencia: "Hebreus 11:1" },
+  { texto: "O Senhor restaura a alma.", referencia: "Salmos 23:3" },
+  { texto: "Aquele que começou boa obra em vocês há de completá-la.", referencia: "Filipenses 1:6" },
+  { texto: "O Senhor conhece os planos que tem para vocês: planos de paz e não de mal.", referencia: "Jeremias 29:11" },
+  { texto: "Não temas, porque eu sou contigo.", referencia: "Isaías 41:10" },
+  { texto: "Em paz me deito e logo adormeço, pois só tu, Senhor, me fazes viver em segurança.", referencia: "Salmos 4:8" },
+  { texto: "O Senhor é bom; a sua misericórdia dura para sempre.", referencia: "Salmos 100:5" },
+  { texto: "Bem-aventurados os que confiam no Senhor.", referencia: "Provérbios 16:20" },
+  { texto: "Busquem ao Senhor enquanto é possível achá-lo.", referencia: "Isaías 55:6" },
+  { texto: "O Senhor sustém os que vacilam.", referencia: "Salmos 145:14" },
+  { texto: "A graça do Senhor é melhor do que a vida.", referencia: "Salmos 63:3" },
+  { texto: "O Senhor é a minha rocha, a minha fortaleza e o meu libertador.", referencia: "Salmos 18:2" },
+  { texto: "O Senhor é bom para os que nele esperam.", referencia: "Lamentações 3:25" },
+  { texto: "Ainda que eu ande pelo vale da sombra da morte, não temerei mal algum.", referencia: "Salmos 23:4" },
+  { texto: "Eu sou o caminho, a verdade e a vida.", referencia: "João 14:6" },
+  { texto: "Bem-aventurados os limpos de coração, porque verão a Deus.", referencia: "Mateus 5:8" }
 ];
 
 export default function ComprovanteVenda({ venda, itens = [], onClose }) {
@@ -15,6 +50,13 @@ export default function ComprovanteVenda({ venda, itens = [], onClose }) {
   
   const calcularSubtotal = () => {
     return itens.reduce((total, item) => total + (item.preco_unitario * item.quantidade), 0);
+  };
+
+  const calcularTroco = () => {
+    if (venda.forma_pagamento === 'dinheiro' && venda.valor_recebido) {
+      return parseFloat(venda.valor_recebido) - parseFloat(venda.valor_final);
+    }
+    return 0;
   };
 
   const imprimir = () => {
@@ -294,25 +336,61 @@ export default function ComprovanteVenda({ venda, itens = [], onClose }) {
             <div style={{
               margin: '18px 0',
               fontSize: '12px',
-              textAlign: 'center',
               padding: '12px',
               background: '#f9f9f9',
               border: '1px solid #ddd'
             }}>
-              <strong style={{ display: 'block', marginBottom: '6px', color: '#333', fontSize: '13px' }}>
-                FORMA DE PAGAMENTO
-              </strong>
-              <span style={{ color: '#000', fontWeight: 'bold' }}>
-                {(() => {
-                  switch(venda.forma_pagamento) {
-                    case 'dinheiro': return 'Dinheiro';
-                    case 'cartao_credito': return 'Cartão de Crédito';
-                    case 'cartao_debito': return 'Cartão de Débito';
-                    case 'pix': return 'PIX';
-                    default: return venda.forma_pagamento || 'Não informado';
-                  }
-                })()}
-              </span>
+              <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                <strong style={{ display: 'block', marginBottom: '6px', color: '#333', fontSize: '13px' }}>
+                  FORMA DE PAGAMENTO
+                </strong>
+                <span style={{ color: '#000', fontWeight: 'bold' }}>
+                  {(() => {
+                    switch(venda.forma_pagamento) {
+                      case 'dinheiro': return 'Dinheiro';
+                      case 'cartao_credito': return 'Cartão de Crédito';
+                      case 'cartao_debito': return 'Cartão de Débito';
+                      case 'pix': return 'PIX';
+                      default: return venda.forma_pagamento || 'Não informado';
+                    }
+                  })()}
+                </span>
+              </div>
+              
+              {/* Detalhes do pagamento em dinheiro */}
+              {venda.forma_pagamento === 'dinheiro' && venda.valor_recebido && (
+                <div style={{ borderTop: '1px solid #ddd', paddingTop: '10px' }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    marginBottom: '4px',
+                    color: '#000'
+                  }}>
+                    <span>Valor do Produto:</span>
+                    <span style={{ fontWeight: 'bold' }}>R$ {parseFloat(venda.valor_final).toFixed(2)}</span>
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    marginBottom: '4px',
+                    color: '#000'
+                  }}>
+                    <span>Valor Recebido:</span>
+                    <span style={{ fontWeight: 'bold' }}>R$ {parseFloat(venda.valor_recebido).toFixed(2)}</span>
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    paddingTop: '6px',
+                    borderTop: '1px solid #ccc',
+                    color: '#000',
+                    fontSize: '14px'
+                  }}>
+                    <span style={{ fontWeight: 'bold' }}>Troco:</span>
+                    <span style={{ fontWeight: 'bold' }}>R$ {calcularTroco().toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Versículo */}
