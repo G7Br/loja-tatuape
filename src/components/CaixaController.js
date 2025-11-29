@@ -291,6 +291,141 @@ Operador: ${user.nome}
     }
   };
 
+  const gerarPDF = async () => {
+    try {
+      // Importar jsPDF dinamicamente
+      const { jsPDF } = await import('jspdf');
+      
+      const doc = new jsPDF();
+      const hoje = new Date().toLocaleDateString('pt-BR');
+      const agora = new Date().toLocaleTimeString('pt-BR');
+      
+      // Configurar fonte
+      doc.setFont('helvetica');
+      
+      // Cabeçalho
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RELATÓRIO DE FECHAMENTO DE CAIXA', 20, 20);
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Data: ${hoje}`, 20, 35);
+      doc.text(`Horário: ${agora}`, 20, 45);
+      doc.text(`Operador: ${user.nome}`, 20, 55);
+      
+      // Linha separadora
+      doc.line(20, 65, 190, 65);
+      
+      // Resumo Financeiro
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RESUMO FINANCEIRO', 20, 80);
+      
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Valor Inicial: R$ ${resumoDia.valor_inicial.toFixed(2)}`, 20, 95);
+      
+      // Vendas por forma de pagamento
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('VENDAS POR FORMA DE PAGAMENTO', 20, 115);
+      
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      
+      let yPos = 130;
+      
+      // Dinheiro
+      doc.setFont('helvetica', 'bold');
+      doc.text('DINHEIRO:', 20, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Quantidade: ${resumoDia.qtd_vendas_dinheiro} vendas`, 25, yPos + 10);
+      doc.text(`Total Recebido: R$ ${(resumoDia.vendas_dinheiro + resumoDia.total_troco).toFixed(2)}`, 25, yPos + 20);
+      doc.text(`Troco Dado: R$ ${resumoDia.total_troco.toFixed(2)}`, 25, yPos + 30);
+      doc.text(`Líquido: R$ ${resumoDia.vendas_dinheiro.toFixed(2)}`, 25, yPos + 40);
+      
+      yPos += 55;
+      
+      // Cartão Crédito
+      doc.setFont('helvetica', 'bold');
+      doc.text('CARTÃO CRÉDITO:', 20, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Quantidade: ${resumoDia.qtd_vendas_credito} vendas`, 25, yPos + 10);
+      doc.text(`Total: R$ ${resumoDia.vendas_credito.toFixed(2)}`, 25, yPos + 20);
+      
+      yPos += 35;
+      
+      // Cartão Débito
+      doc.setFont('helvetica', 'bold');
+      doc.text('CARTÃO DÉBITO:', 20, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Quantidade: ${resumoDia.qtd_vendas_debito} vendas`, 25, yPos + 10);
+      doc.text(`Total: R$ ${resumoDia.vendas_debito.toFixed(2)}`, 25, yPos + 20);
+      
+      yPos += 35;
+      
+      // PIX
+      doc.setFont('helvetica', 'bold');
+      doc.text('PIX:', 20, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Quantidade: ${resumoDia.qtd_vendas_pix} vendas`, 25, yPos + 10);
+      doc.text(`Total: R$ ${resumoDia.vendas_pix.toFixed(2)}`, 25, yPos + 20);
+      
+      yPos += 40;
+      
+      // Movimentações
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('MOVIMENTAÇÕES', 20, yPos);
+      
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Total de Entradas: R$ ${resumoDia.total_entradas.toFixed(2)}`, 20, yPos + 15);
+      doc.text(`Total de Saídas: R$ ${resumoDia.total_saidas.toFixed(2)}`, 20, yPos + 25);
+      
+      yPos += 40;
+      
+      // Resultado Final
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RESULTADO FINAL', 20, yPos);
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Saldo Final: R$ ${resumoDia.saldo_final.toFixed(2)}`, 20, yPos + 15);
+      
+      yPos += 30;
+      
+      // Dinheiro em Caixa
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Dinheiro que deve ter: R$ ${(resumoDia.valor_inicial + resumoDia.vendas_dinheiro - resumoDia.total_saidas).toFixed(2)}`, 20, yPos);
+      
+      yPos += 20;
+      
+      // Observações
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('OBSERVAÇÕES', 20, yPos);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const totalVendas = resumoDia.qtd_vendas_dinheiro + resumoDia.qtd_vendas_credito + resumoDia.qtd_vendas_debito + resumoDia.qtd_vendas_pix;
+      doc.text(`Total de vendas realizadas: ${totalVendas}`, 20, yPos + 12);
+      doc.text(`Maior concentração em: ${getMaiorFormaPagamento()}`, 20, yPos + 22);
+      doc.text(`Status: Caixa ${caixaStatus}`, 20, yPos + 32);
+      
+      // Salvar PDF
+      doc.save(`Relatorio_Caixa_${hoje.replace(/\//g, '-')}.pdf`);
+      
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('❌ Erro ao gerar PDF. Usando impressão alternativa...');
+      imprimirRelatorio();
+    }
+  };
+
   const imprimirRelatorio = () => {
     const janela = window.open('', '_blank');
     janela.document.write(`
@@ -490,6 +625,16 @@ Operador: ${user.nome}
               justifyContent: 'center',
               marginTop: '1.5rem'
             }}>
+              <ActionButton
+                onClick={gerarPDF}
+                style={{
+                  background: '#ef4444',
+                  color: 'white'
+                }}
+              >
+                📄 Gerar PDF
+              </ActionButton>
+              
               <ActionButton
                 onClick={imprimirRelatorio}
                 style={{
