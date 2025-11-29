@@ -412,6 +412,7 @@ export default function Caixa({ user, onLogout }) {
         .select('*')
         .eq('usuario_id', user.id)
         .eq('data_fechamento', hoje)
+        .eq('status', 'aberto')
         .single();
       
       setCaixaAberto(!!data);
@@ -657,7 +658,8 @@ Obrigado pela preferência!`;
         .from('vendas_tatuape')
         .update({ 
           forma_pagamento: metodoPagamento,
-          valor_final: novoTotal
+          valor_final: novoTotal,
+          valor_recebido: metodoPagamento === 'dinheiro' ? valorPago : novoTotal
         })
         .eq('id', vendaSelecionada.id);
       
@@ -689,7 +691,8 @@ Obrigado pela preferência!`;
       const vendaCompleta = {
         ...vendaSelecionada,
         valor_final: novoTotal,
-        forma_pagamento: metodoPagamento
+        forma_pagamento: metodoPagamento,
+        valor_recebido: metodoPagamento === 'dinheiro' ? valorPago : novoTotal
       };
       
       // Salvar comprovante automaticamente
