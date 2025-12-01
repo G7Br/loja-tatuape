@@ -314,6 +314,7 @@ export default function SistemaVendas({ user, darkMode, onClose }) {
           desconto: desconto,
           valor_final: valorTotal,
           forma_pagamento: formaPagamentoFinal,
+          valor_recebido: metodoPagamento === 'dinheiro' ? valorPago : valorTotal,
           cliente_nome: cliente.nome_completo,
           cliente_telefone: cliente.telefone,
           cliente_cpf: cliente.cpf,

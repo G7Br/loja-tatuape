@@ -181,6 +181,13 @@ export default function ComprovanteVenda({ venda, itens = [], onClose, dadosPaga
     return parseFloat(venda.valor_final || 0);
   };
 
+  const calcularTroco = () => {
+    if (venda.forma_pagamento === 'dinheiro' && venda.valor_recebido) {
+      return parseFloat(venda.valor_recebido) - parseFloat(venda.valor_final);
+    }
+    return 0;
+  };
+
   const imprimir = () => {
     const printContent = document.querySelector('.comprovante-content');
     if (!printContent) {
@@ -499,52 +506,25 @@ export default function ComprovanteVenda({ venda, itens = [], onClose, dadosPaga
             <div style={{
               margin: '18px 0',
               fontSize: '12px',
-              padding: '15px',
-              background: '#f5f5f5',
-              border: '1px solid #ccc',
-              borderRadius: '6px'
+              textAlign: 'center',
+              padding: '12px',
+              background: '#f9f9f9',
+              border: '1px solid #ddd'
             }}>
-              <div style={{ textAlign: 'center', marginBottom: '12px' }}>
-                <strong style={{ display: 'block', marginBottom: '8px', color: '#000', fontSize: '14px' }}>
-                  FORMA DE PAGAMENTO
-                </strong>
-              </div>
-              
-              {/* Pagamento Misto */}
-              {venda.forma_pagamento && venda.forma_pagamento.includes('|') ? (
-                <div>
-                  <div style={{ marginBottom: '8px', textAlign: 'center', fontWeight: 'bold', color: '#000' }}>
-                    PAGAMENTO MISTO
-                  </div>
-                  {formatarFormaPagamento(venda.forma_pagamento).map((forma, index) => (
-                    <div key={index} style={{
-                      marginBottom: '6px',
-                      padding: '6px 8px',
-                      background: '#ffffff',
-                      borderRadius: '4px',
-                      border: '1px solid #999',
-                      textAlign: 'center'
-                    }}>
-                      <span style={{ color: '#333', fontWeight: '500', fontSize: '11px' }}>{forma}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                /* Pagamento Simples */
-                <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                  <span style={{ 
-                    color: '#000', 
-                    fontWeight: 'bold',
-                    fontSize: '13px',
-                    padding: '6px 12px',
-                    background: '#ffffff',
-                    borderRadius: '4px',
-                    border: '1px solid #999'
-                  }}>
-                    {formatarFormaPagamento(venda.forma_pagamento)}
-                  </span>
-                </div>
-              )}
+              <strong style={{ display: 'block', marginBottom: '6px', color: '#333', fontSize: '13px' }}>
+                FORMA DE PAGAMENTO
+              </strong>
+              <span style={{ color: '#000', fontWeight: 'bold' }}>
+                {(() => {
+                  switch(venda.forma_pagamento) {
+                    case 'dinheiro': return 'Dinheiro';
+                    case 'cartao_credito': return 'Cartão de Crédito';
+                    case 'cartao_debito': return 'Cartão de Débito';
+                    case 'pix': return 'PIX';
+                    default: return venda.forma_pagamento || 'Não informado';
+                  }
+                })()}
+              </span>
             </div>
             
             {/* Versículo */}

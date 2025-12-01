@@ -441,6 +441,7 @@ export default function Caixa({ user, onLogout }) {
         .select('*')
         .eq('usuario_id', user.id)
         .eq('data_fechamento', hoje)
+        .eq('status', 'aberto')
         .maybeSingle();
       
       console.log('Verificando caixa aberto:', { data, error, hoje, userId: user.id });
@@ -941,7 +942,8 @@ Obrigado pela preferência!`;
         .from('vendas_tatuape')
         .update({ 
           forma_pagamento: formaPagamentoFinal,
-          valor_final: novoTotal
+          valor_final: novoTotal,
+          valor_recebido: valorRecebidoFinal
         })
         .eq('id', vendaSelecionada.id);
       
@@ -1010,7 +1012,8 @@ Obrigado pela preferência!`;
         valor_final: novoTotal,
         forma_pagamento: formaPagamentoFinal,
         valor_pago_cliente: valorRecebidoFinal,
-        troco_cliente: trocoFinal
+        troco_cliente: trocoFinal,
+        valor_recebido: valorRecebidoFinal
       };
       
       // Salvar comprovante automaticamente
