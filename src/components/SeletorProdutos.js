@@ -7,14 +7,18 @@ const Container = styled.div`
   height: 100%;
 `;
 
-const CategoryTabs = styled.div`
+const CategoryTabs = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
   display: flex;
   background: ${props => props.darkMode ? '#2a2a2a' : '#f8f9fa'};
   border-bottom: 1px solid ${props => props.darkMode ? '#333' : '#e5e7eb'};
   overflow-x: auto;
 `;
 
-const CategoryTab = styled.button`
+const CategoryTab = styled.button.withConfig({
+  shouldForwardProp: (prop) => !['active', 'darkMode'].includes(prop)
+})`
   padding: 0.75rem 1.5rem;
   background: ${props => props.active ? (props.darkMode ? '#3b82f6' : '#3b82f6') : 'transparent'};
   color: ${props => props.active ? 'white' : (props.darkMode ? '#fff' : '#000')};
@@ -38,7 +42,9 @@ const ProductsGrid = styled.div`
   flex: 1;
 `;
 
-const ProductCard = styled.div`
+const ProductCard = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
   background: ${props => props.darkMode ? '#2a2a2a' : '#ffffff'};
   border: 1px solid ${props => props.darkMode ? '#333' : '#e5e7eb'};
   border-radius: 0.5rem;
@@ -54,7 +60,9 @@ const ProductCard = styled.div`
   }
 `;
 
-const ProductImage = styled.div`
+const ProductImage = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
   height: 80px;
   background: ${props => props.darkMode ? '#333' : '#f3f4f6'};
   border-radius: 0.375rem;
@@ -66,7 +74,9 @@ const ProductImage = styled.div`
   position: relative;
 `;
 
-const StockBadge = styled.div`
+const StockBadge = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['stock'].includes(prop)
+})`
   position: absolute;
   top: 0.25rem;
   right: 0.25rem;
@@ -82,7 +92,9 @@ const StockBadge = styled.div`
   color: white;
 `;
 
-const ProductName = styled.div`
+const ProductName = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
   font-weight: 600;
   font-size: 0.8rem;
   color: ${props => props.darkMode ? '#fff' : '#000'};
@@ -111,7 +123,9 @@ const ProductPrice = styled.div`
   text-align: center;
 `;
 
-const SearchBar = styled.input`
+const SearchBar = styled.input.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
   width: 100%;
   padding: 0.75rem;
   margin: 1rem;

@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../utils/supabase';
 import SeletorProdutos from './SeletorProdutos';
+import { createBrasiliaTimestamp } from '../utils/dateUtils';
 
-const Container = styled.div`
+const Container = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -11,7 +14,9 @@ const Container = styled.div`
   color: ${props => props.darkMode ? '#ffffff' : '#1a1a1a'};
 `;
 
-const Header = styled.div`
+const Header = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -27,7 +32,9 @@ const MainContent = styled.div`
   overflow: hidden;
 `;
 
-const LeftPanel = styled.div`
+const LeftPanel = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
   width: 300px;
   background: ${props => props.darkMode ? '#1a1a1a' : '#ffffff'};
   border-right: 1px solid ${props => props.darkMode ? '#333' : '#e5e7eb'};
@@ -41,7 +48,9 @@ const CenterPanel = styled.div`
   overflow-y: auto;
 `;
 
-const RightPanel = styled.div`
+const RightPanel = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
   width: 350px;
   background: ${props => props.darkMode ? '#1a1a1a' : '#ffffff'};
   border-left: 1px solid ${props => props.darkMode ? '#333' : '#e5e7eb'};
@@ -49,7 +58,9 @@ const RightPanel = styled.div`
   flex-direction: column;
 `;
 
-const SearchInput = styled.input`
+const SearchInput = styled.input.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
   width: 100%;
   padding: 0.75rem;
   margin-bottom: 1rem;
@@ -65,7 +76,9 @@ const SearchInput = styled.input`
   }
 `;
 
-const Button = styled.button`
+const Button = styled.button.withConfig({
+  shouldForwardProp: (prop) => !['size', 'variant', 'darkMode'].includes(prop)
+})`
   padding: ${props => props.size === 'large' ? '1rem 2rem' : '0.75rem 1.5rem'};
   background: ${props => {
     if (props.variant === 'primary') return '#3b82f6';
@@ -100,7 +113,9 @@ const ProductGrid = styled.div`
   gap: 1rem;
 `;
 
-const ProductCard = styled.div`
+const ProductCard = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
   background: ${props => props.darkMode ? '#2a2a2a' : '#ffffff'};
   border: 1px solid ${props => props.darkMode ? '#333' : '#e5e7eb'};
   border-radius: 0.75rem;
@@ -114,7 +129,9 @@ const ProductCard = styled.div`
   }
 `;
 
-const CartItem = styled.div`
+const CartItem = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -137,7 +154,9 @@ const Modal = styled.div`
   z-index: 1000;
 `;
 
-const ModalContent = styled.div`
+const ModalContent = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
   background: ${props => props.darkMode ? '#1a1a1a' : '#ffffff'};
   border-radius: 1rem;
   padding: 2rem;
@@ -167,6 +186,8 @@ export default function SistemaVendas({ user, darkMode, onClose }) {
   const [valorPago, setValorPago] = useState(0);
   const [desconto, setDesconto] = useState(0);
   const [observacoes, setObservacoes] = useState('');
+  const [taxaLinkPagamento, setTaxaLinkPagamento] = useState(0);
+  const [showLinkPagamentoModal, setShowLinkPagamentoModal] = useState(false);
 
   useEffect(() => {
     carregarDados();
@@ -258,6 +279,11 @@ export default function SistemaVendas({ user, darkMode, onClose }) {
       alert('Valor pago é insuficiente!');
       return;
     }
+    
+    if (metodoPagamento === 'link_pagamento' && valorPago < calcularTotal()) {
+      alert('Erro na configuração do link de pagamento!');
+      return;
+    }
 
     if (!cliente.nome_completo.trim()) {
       alert('Dados do cliente são obrigatórios!');
@@ -268,8 +294,16 @@ export default function SistemaVendas({ user, darkMode, onClose }) {
       const numeroVenda = `TAT-${Date.now()}`;
       const valorTotal = calcularTotal();
       const troco = metodoPagamento === 'dinheiro' && valorPago > valorTotal ? valorPago - valorTotal : 0;
+      
+      // Preparar forma de pagamento com taxa se for link
+      let formaPagamentoFinal = metodoPagamento;
+      if (metodoPagamento === 'link_pagamento' && taxaLinkPagamento > 0) {
+        formaPagamentoFinal = `${metodoPagamento}:taxa_${taxaLinkPagamento}%`;
+      }
 
-      // Criar venda
+      // Criar venda com timestamp correto do horário de Brasília
+      const timestampBrasilia = createBrasiliaTimestamp();
+      
       const { data: venda, error: vendaError } = await supabase
         .from('vendas_tatuape')
         .insert([{
@@ -279,17 +313,26 @@ export default function SistemaVendas({ user, darkMode, onClose }) {
           valor_total: calcularSubtotal(),
           desconto: desconto,
           valor_final: valorTotal,
-          forma_pagamento: metodoPagamento,
+          forma_pagamento: formaPagamentoFinal,
           cliente_nome: cliente.nome_completo,
           cliente_telefone: cliente.telefone,
           cliente_cpf: cliente.cpf,
           cliente_cidade: cliente.cidade,
           onde_conheceu: cliente.onde_conheceu,
           observacoes: observacoes,
-          status: 'finalizada'
+          status: 'finalizada',
+          data_venda: timestampBrasilia,
+          created_at: timestampBrasilia
         }])
         .select()
         .single();
+
+      if (vendaError) throw vendaError;
+
+      // Atualizar estatísticas do cliente
+      await supabase.rpc('atualizar_estatisticas_cliente', {
+        cliente_nome_param: cliente.nome_completo
+      });
 
       if (vendaError) throw vendaError;
 
@@ -333,23 +376,32 @@ export default function SistemaVendas({ user, darkMode, onClose }) {
           }]);
       }
 
-      // Registrar no caixa
+      // Registrar no caixa com timestamp correto
       await supabase
         .from('caixa_tatuape')
         .insert([{
           tipo: 'entrada',
           valor: valorTotal,
-          valor_pago: metodoPagamento === 'dinheiro' ? valorPago : valorTotal,
+          valor_pago: metodoPagamento === 'dinheiro' ? valorPago : (metodoPagamento === 'link_pagamento' ? valorPago : valorTotal),
           troco: troco,
-          forma_pagamento: metodoPagamento,
+          forma_pagamento: formaPagamentoFinal,
           descricao: `Venda ${numeroVenda}${troco > 0 ? ` (Troco: R$ ${troco.toFixed(2)})` : ''}`,
           venda_id: venda.id,
-          usuario_id: user.id
+          usuario_id: user.id,
+          data_movimentacao: timestampBrasilia,
+          created_at: timestampBrasilia
         }]);
 
-      const mensagem = troco > 0 
-        ? `✅ Venda finalizada com sucesso!\n\n🧾 Número: ${numeroVenda}\n💰 Total: R$ ${valorTotal.toFixed(2)}\n💵 Pago: R$ ${valorPago.toFixed(2)}\n🔄 Troco: R$ ${troco.toFixed(2)}`
-        : `✅ Venda finalizada com sucesso!\n\n🧾 Número: ${numeroVenda}\n💰 Total: R$ ${valorTotal.toFixed(2)}`;
+      let mensagem = `✅ Venda finalizada com sucesso!\n\n🧾 Número: ${numeroVenda}\n💰 Total: R$ ${valorTotal.toFixed(2)}`;
+      
+      if (metodoPagamento === 'link_pagamento') {
+        mensagem += `\n\n🔗 Link de Pagamento: R$ ${valorPago.toFixed(2)}`;
+        if (taxaLinkPagamento > 0) {
+          mensagem += `\n📊 Taxa aplicada: ${taxaLinkPagamento}% (+R$ ${(valorPago - valorTotal).toFixed(2)})`;
+        }
+      } else if (troco > 0) {
+        mensagem += `\n💵 Pago: R$ ${valorPago.toFixed(2)}\n🔄 Troco: R$ ${troco.toFixed(2)}`;
+      }
 
       alert(mensagem);
       
@@ -370,6 +422,8 @@ export default function SistemaVendas({ user, darkMode, onClose }) {
       setDesconto(0);
       setObservacoes('');
       setBusca('');
+      setTaxaLinkPagamento(0);
+      setShowLinkPagamentoModal(false);
       
       carregarDados();
 
@@ -860,7 +914,7 @@ export default function SistemaVendas({ user, darkMode, onClose }) {
           
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateColumns: 'repeat(5, 1fr)',
             gap: '1rem',
             marginBottom: '1rem'
           }}>
@@ -868,16 +922,21 @@ export default function SistemaVendas({ user, darkMode, onClose }) {
               { id: 'dinheiro', label: 'Dinheiro', icon: '💵', color: '#10b981' },
               { id: 'cartao_credito', label: 'Crédito', icon: '💳', color: '#3b82f6' },
               { id: 'cartao_debito', label: 'Débito', icon: '💳', color: '#8b5cf6' },
-              { id: 'pix', label: 'PIX', icon: '📱', color: '#f59e0b' }
+              { id: 'pix', label: 'PIX', icon: '📱', color: '#f59e0b' },
+              { id: 'link_pagamento', label: 'Link', icon: '🔗', color: '#6366f1' }
             ].map(metodo => (
               <button
                 key={metodo.id}
                 onClick={() => {
-                  setMetodoPagamento(metodo.id);
-                  if (metodo.id !== 'dinheiro') {
-                    setValorPago(calcularTotal());
+                  if (metodo.id === 'link_pagamento') {
+                    setShowLinkPagamentoModal(true);
                   } else {
-                    setValorPago(0);
+                    setMetodoPagamento(metodo.id);
+                    if (metodo.id !== 'dinheiro') {
+                      setValorPago(calcularTotal());
+                    } else {
+                      setValorPago(0);
+                    }
                   }
                 }}
                 style={{
@@ -962,6 +1021,72 @@ export default function SistemaVendas({ user, darkMode, onClose }) {
               )}
             </div>
           )}
+          
+          {metodoPagamento === 'link_pagamento' && (
+            <div style={{
+              marginTop: '1rem',
+              padding: '1.5rem',
+              background: darkMode ? '#1a2a2a' : '#f0f9ff',
+              borderRadius: '0.75rem',
+              border: '2px solid #6366f1'
+            }}>
+              <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem'}}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  background: '#6366f1',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.2rem'
+                }}>
+                  🔗
+                </div>
+                <div>
+                  <h4 style={{margin: 0, color: darkMode ? '#fff' : '#000', fontSize: '1.1rem'}}>Link de Pagamento</h4>
+                  <p style={{margin: 0, color: '#888', fontSize: '0.9rem'}}>Pagamento via link com taxa adicional</p>
+                </div>
+              </div>
+              
+              <div style={{marginBottom: '1rem'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem'}}>
+                  <span style={{color: darkMode ? '#fff' : '#000'}}>Valor Original:</span>
+                  <span style={{fontWeight: '700', color: darkMode ? '#fff' : '#000'}}>R$ {calcularTotal().toFixed(2)}</span>
+                </div>
+                {taxaLinkPagamento > 0 && (
+                  <>
+                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem'}}>
+                      <span style={{color: darkMode ? '#fff' : '#000'}}>Taxa ({taxaLinkPagamento}%):</span>
+                      <span style={{fontWeight: '700', color: '#f59e0b'}}>+ R$ {(calcularTotal() * (taxaLinkPagamento / 100)).toFixed(2)}</span>
+                    </div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', borderTop: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`, paddingTop: '0.5rem'}}>
+                      <span style={{color: darkMode ? '#fff' : '#000', fontSize: '1.1rem', fontWeight: '700'}}>Total com Taxa:</span>
+                      <span style={{fontWeight: '700', color: '#6366f1', fontSize: '1.2rem'}}>R$ {valorPago.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <div style={{
+                padding: '1rem',
+                background: '#6366f1',
+                color: 'white',
+                borderRadius: '0.5rem',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '1rem'
+              }}>
+                <span style={{fontSize: '1.2rem'}}>✅</span>
+                <div>
+                  <div>Link configurado com sucesso!</div>
+                  <div style={{fontSize: '0.9rem', opacity: 0.9}}>Valor total: R$ {valorPago.toFixed(2)}</div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Observações */}
@@ -1003,7 +1128,7 @@ export default function SistemaVendas({ user, darkMode, onClose }) {
           <Button
             variant="success"
             onClick={finalizarVenda}
-            disabled={!metodoPagamento || (metodoPagamento === 'dinheiro' && (!valorPago || valorPago < calcularTotal()))}
+            disabled={!metodoPagamento || (metodoPagamento === 'dinheiro' && (!valorPago || valorPago < calcularTotal())) || (metodoPagamento === 'link_pagamento' && (!valorPago || valorPago < calcularTotal()))}
             size="large"
           >
             ✅ FINALIZAR VENDA
@@ -1044,6 +1169,162 @@ export default function SistemaVendas({ user, darkMode, onClose }) {
         {etapa === 'cliente' && renderEtapaCliente()}
         {etapa === 'pagamento' && renderEtapaPagamento()}
       </MainContent>
+      
+      {/* Modal de Link de Pagamento */}
+      {showLinkPagamentoModal && (
+        <Modal>
+          <ModalContent darkMode={darkMode}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
+              <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                🔗 Link de Pagamento
+              </h2>
+              <button 
+                onClick={() => {
+                  setShowLinkPagamentoModal(false);
+                  setTaxaLinkPagamento(0);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: darkMode ? '#fff' : '#000'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div style={{
+              background: darkMode ? '#2a2a2a' : '#f0f9ff',
+              border: '2px solid #6366f1',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem'}}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  background: '#6366f1',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.2rem'
+                }}>
+                  🔗
+                </div>
+                <div>
+                  <h4 style={{margin: 0, color: darkMode ? '#fff' : '#000', fontSize: '1.1rem'}}>Configurar Link de Pagamento</h4>
+                  <p style={{margin: 0, color: '#888', fontSize: '0.9rem'}}>Defina a taxa adicional para o link de pagamento</p>
+                </div>
+              </div>
+              
+              <div style={{marginBottom: '1rem'}}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '0.75rem',
+                  padding: '0.5rem 0'
+                }}>
+                  <span style={{color: darkMode ? '#fff' : '#000', fontSize: '1rem'}}>Valor da Venda:</span>
+                  <span style={{color: darkMode ? '#fff' : '#000', fontSize: '1rem', fontWeight: '600'}}>
+                    R$ {calcularTotal().toFixed(2)}
+                  </span>
+                </div>
+                
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '0.75rem',
+                  padding: '0.5rem 0'
+                }}>
+                  <span style={{color: darkMode ? '#fff' : '#000', fontSize: '1rem'}}>Taxa Adicional (%):</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={taxaLinkPagamento}
+                    onChange={(e) => setTaxaLinkPagamento(parseFloat(e.target.value) || 0)}
+                    style={{
+                      width: '100px',
+                      padding: '0.75rem',
+                      border: `2px solid ${darkMode ? '#333' : '#e5e7eb'}`,
+                      borderRadius: '0.5rem',
+                      background: darkMode ? '#333' : '#fff',
+                      color: darkMode ? '#fff' : '#000',
+                      textAlign: 'right',
+                      fontSize: '1rem',
+                      fontWeight: '600'
+                    }}
+                    placeholder="0,0"
+                  />
+                </div>
+                
+                {taxaLinkPagamento > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '0.75rem',
+                    padding: '0.5rem 0',
+                    borderTop: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
+                    paddingTop: '0.75rem'
+                  }}>
+                    <span style={{color: darkMode ? '#fff' : '#000', fontSize: '1rem'}}>Valor da Taxa:</span>
+                    <span style={{color: '#f59e0b', fontSize: '1rem', fontWeight: '600'}}>
+                      + R$ {(calcularTotal() * (taxaLinkPagamento / 100)).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '1.2rem',
+                  fontWeight: '700',
+                  borderTop: `2px solid ${darkMode ? '#333' : '#e5e7eb'}`,
+                  paddingTop: '1rem',
+                  marginTop: '1rem'
+                }}>
+                  <span style={{color: darkMode ? '#fff' : '#000'}}>TOTAL COM TAXA:</span>
+                  <span style={{color: '#6366f1', fontSize: '1.3rem'}}>
+                    R$ {(calcularTotal() * (1 + taxaLinkPagamento / 100)).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
+              <Button
+                darkMode={darkMode}
+                onClick={() => {
+                  setShowLinkPagamentoModal(false);
+                  setTaxaLinkPagamento(0);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  const valorComTaxa = calcularTotal() * (1 + taxaLinkPagamento / 100);
+                  setMetodoPagamento('link_pagamento');
+                  setValorPago(valorComTaxa);
+                  setShowLinkPagamentoModal(false);
+                }}
+              >
+                🔗 GERAR LINK
+              </Button>
+            </div>
+          </ModalContent>
+        </Modal>
+      )}
     </Container>
   );
 }

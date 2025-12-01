@@ -7,7 +7,7 @@ import Vendedor from '../components/Vendedor';
 import Caixa from '../components/Caixa';
 
 export default function Home() {
-  const { theme } = useTheme();
+  const { darkMode } = useTheme();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -35,8 +35,8 @@ export default function Home() {
         justifyContent: 'center',
         alignItems: 'center',
         height: '100vh',
-        background: theme.background,
-        color: theme.text,
+        background: darkMode ? '#1a1a1a' : '#ffffff',
+        color: darkMode ? '#ffffff' : '#000000',
         fontSize: '1.5rem'
       }}>
         Carregando...
@@ -63,8 +63,8 @@ export default function Home() {
           justifyContent: 'center',
           alignItems: 'center',
           height: '100vh',
-          background: theme.background,
-          color: theme.text,
+          background: darkMode ? '#1a1a1a' : '#ffffff',
+          color: darkMode ? '#ffffff' : '#000000',
           flexDirection: 'column',
           gap: '20px'
         }}>
@@ -73,8 +73,8 @@ export default function Home() {
             onClick={handleLogout}
             style={{
               padding: '12px 24px',
-              background: theme.accent,
-              color: theme.background,
+              background: darkMode ? '#ffffff' : '#000000',
+              color: darkMode ? '#000000' : '#ffffff',
               border: 'none',
               borderRadius: '8px',
               fontWeight: '600',

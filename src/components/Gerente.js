@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../utils/supabase';
+import * as XLSX from 'xlsx';
 
 // MESMOS ESTILOS DO SISTEMA PRINCIPAL
 const Container = styled.div`
@@ -444,6 +445,13 @@ export default function Gerente({ user, onLogout }) {
   const [showSaidaModal, setShowSaidaModal] = useState(false);
   const [valorSaida, setValorSaida] = useState(0);
   const [observacaoSaida, setObservacaoSaida] = useState('');
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [csvFile, setCsvFile] = useState(null);
+  const [importLogs, setImportLogs] = useState([]);
+  const [importing, setImporting] = useState(false);
+  const [categorias, setCategorias] = useState(['terno', 'camisa', 'gravata', 'costume', 'acessorio', 'pre venda', 'Coleção Choseman']);
+  const [novaCategoria, setNovaCategoria] = useState('');
+  const [showCategoriaModal, setShowCategoriaModal] = useState(false);
   
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -476,13 +484,13 @@ export default function Gerente({ user, onLogout }) {
       
       if (error) throw error;
       
-      alert('✅ Saída registrada com sucesso!');
+      alert('Saída registrada com sucesso!');
       setShowSaidaModal(false);
       setValorSaida(0);
       setObservacaoSaida('');
       carregarRelatorios();
     } catch (error) {
-      alert('❌ Erro ao registrar saída: ' + error.message);
+      alert('Erro ao registrar saída: ' + error.message);
     }
   };
   const [relatorios, setRelatorios] = useState({
@@ -503,19 +511,42 @@ export default function Gerente({ user, onLogout }) {
     try {
       const hoje = new Date();
       const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-      const inicioSemana = new Date(hoje.setDate(hoje.getDate() - hoje.getDay()));
+      // Corrigir cálculo da semana para não modificar a variável hoje
+      const inicioSemana = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - hoje.getDay());
       const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
       
+      console.log('Carregando relatórios...', { inicioDia, inicioSemana, inicioMes });
+      
       // Vendas por período
-      const { data: todasVendas } = await supabase
+      const { data: todasVendas, error: vendasError } = await supabase
         .from('vendas_tatuape')
         .select('*, itens_venda_tatuape(*)')
         .neq('forma_pagamento', 'pendente_caixa')
         .order('data_venda', { ascending: false });
       
-      const vendasDia = todasVendas?.filter(v => new Date(v.data_venda) >= inicioDia) || [];
-      const vendasSemana = todasVendas?.filter(v => new Date(v.data_venda) >= inicioSemana) || [];
-      const vendasMes = todasVendas?.filter(v => new Date(v.data_venda) >= inicioMes) || [];
+      if (vendasError) {
+        console.error('Erro ao carregar vendas:', vendasError);
+        throw vendasError;
+      }
+      
+      console.log('Vendas carregadas:', todasVendas?.length || 0);
+      
+      const vendasDia = todasVendas?.filter(v => {
+        const dataVenda = new Date(v.data_venda);
+        return dataVenda >= inicioDia && dataVenda <= hoje;
+      }) || [];
+      
+      const vendasSemana = todasVendas?.filter(v => {
+        const dataVenda = new Date(v.data_venda);
+        return dataVenda >= inicioSemana && dataVenda <= hoje;
+      }) || [];
+      
+      const vendasMes = todasVendas?.filter(v => {
+        const dataVenda = new Date(v.data_venda);
+        return dataVenda >= inicioMes && dataVenda <= hoje;
+      }) || [];
+      
+      console.log('Vendas filtradas:', { dia: vendasDia.length, semana: vendasSemana.length, mes: vendasMes.length });
       
       // Produtos mais vendidos
       const calcularProdutosMaisVendidos = (vendas) => {
@@ -544,10 +575,25 @@ export default function Gerente({ user, onLogout }) {
         const ticketMedio = quantidade > 0 ? total / quantidade : 0;
         
         const porPagamento = vendas.reduce((acc, v) => {
-          const tipo = v.forma_pagamento || 'outros';
-          acc[tipo] = (acc[tipo] || 0) + parseFloat(v.valor_final || 0);
+          const forma = v.forma_pagamento || 'outros';
+          const valor = parseFloat(v.valor_final || 0);
+          
+          if (forma.includes('|')) {
+            // Pagamento misto - dividir pelos tipos
+            forma.split('|').forEach(f => {
+              const [tipo, valorParte] = f.split(':');
+              const valorNumerico = parseFloat(valorParte || 0);
+              acc[tipo] = (acc[tipo] || 0) + valorNumerico;
+            });
+          } else {
+            // Pagamento único
+            acc[forma] = (acc[forma] || 0) + valor;
+          }
+          
           return acc;
         }, {});
+        
+        console.log('Métricas calculadas:', { total, quantidade, ticketMedio, porPagamento });
         
         return { total, quantidade, ticketMedio, porPagamento };
       };
@@ -675,7 +721,7 @@ export default function Gerente({ user, onLogout }) {
 
   const adicionarProduto = async () => {
     if (!novoProduto.nome || !novoProduto.preco_venda || !novoProduto.tipo) {
-      alert('Preencha os campos obrigatórios (nome, tipo e preço)');
+      alert('Preencha os campos obrigatórios (nome, categoria e preço)');
       return;
     }
     
@@ -778,6 +824,112 @@ export default function Gerente({ user, onLogout }) {
     }
   };
 
+  const importarCSV = async () => {
+    if (!csvFile) {
+      alert('Selecione um arquivo!');
+      return;
+    }
+
+    setImporting(true);
+    setImportLogs(['Iniciando importação...']);
+
+    try {
+      let text;
+      const fileName = csvFile.name.toLowerCase();
+      
+      if (fileName.endsWith('.xlsx')) {
+        setImportLogs(prev => [...prev, 'Convertendo XLSX para CSV...']);
+        const arrayBuffer = await csvFile.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        text = XLSX.utils.sheet_to_csv(worksheet);
+        setImportLogs(prev => [...prev, 'XLSX convertido com sucesso!']);
+      } else {
+        text = await csvFile.text();
+      }
+      
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        throw new Error('Arquivo deve ter pelo menos 2 linhas (cabeçalho + dados)');
+      }
+
+      const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const expectedHeaders = ['codigo', 'nome', 'tipo', 'cor', 'tamanho', 'preco_venda', 'estoque_atual', 'estoque_minimo', 'ativo'];
+      
+      const missingHeaders = expectedHeaders.filter(h => !header.includes(h));
+      if (missingHeaders.length > 0) {
+        throw new Error(`Cabeçalhos obrigatórios ausentes: ${missingHeaders.join(', ')}`);
+      }
+
+      setImportLogs(prev => [...prev, `Cabeçalho validado: ${header.length} colunas`]);
+      setImportLogs(prev => [...prev, `Processando ${lines.length - 1} produtos...`]);
+
+      let sucessos = 0;
+      let erros = 0;
+
+      for (let i = 1; i < lines.length; i++) {
+        try {
+          const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          
+          if (values.length !== header.length) {
+            throw new Error(`Linha ${i + 1}: Número de colunas incorreto`);
+          }
+
+          const produto = {};
+          header.forEach((col, index) => {
+            produto[col] = values[index];
+          });
+
+          if (!produto.codigo || !produto.nome || !produto.preco_venda) {
+            throw new Error(`Linha ${i + 1}: Campos obrigatórios ausentes`);
+          }
+
+          const produtoFormatado = {
+            codigo: produto.codigo,
+            nome: produto.nome,
+            tipo: produto.tipo || null,
+            cor: produto.cor || null,
+            tamanho: produto.tamanho || null,
+            preco_venda: parseFloat(produto.preco_venda),
+            estoque_atual: parseInt(produto.estoque_atual) || 0,
+            estoque_minimo: parseInt(produto.estoque_minimo) || 5,
+            ativo: ['true', 'sim', 'ativo'].includes(produto.ativo?.toLowerCase())
+          };
+
+          if (isNaN(produtoFormatado.preco_venda) || produtoFormatado.preco_venda <= 0) {
+            throw new Error(`Linha ${i + 1}: Preço inválido`);
+          }
+
+          const { error } = await supabase
+            .from('produtos_tatuape')
+            .upsert([produtoFormatado], { onConflict: 'codigo' });
+
+          if (error) throw error;
+
+          sucessos++;
+          setImportLogs(prev => [...prev, `${produto.codigo} - ${produto.nome}`]);
+        } catch (error) {
+          erros++;
+          setImportLogs(prev => [...prev, `Linha ${i + 1}: ${error.message}`]);
+        }
+      }
+
+      setImportLogs(prev => [...prev, `\nImportação concluída!`]);
+      setImportLogs(prev => [...prev, `Sucessos: ${sucessos}`]);
+      setImportLogs(prev => [...prev, `Erros: ${erros}`]);
+      
+      if (sucessos > 0) {
+        carregarDados();
+      }
+
+    } catch (error) {
+      setImportLogs(prev => [...prev, `Erro geral: ${error.message}`]);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const alterarPrecoLote = async (filtro, novoPreco) => {
     if (!confirm(`Alterar preço de todos os produtos ${filtro} para R$ ${novoPreco}?`)) return;
     
@@ -837,14 +989,86 @@ export default function Gerente({ user, onLogout }) {
     }
   };
 
+  const formatarValor = (valor) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(valor || 0);
+  };
+
+  const gerarFechamentoMes = () => {
+    const hoje = new Date();
+    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const vendasMes = vendas.filter(v => 
+      new Date(v.data_venda) >= inicioMes && v.forma_pagamento !== 'pendente_caixa'
+    );
+    
+    const analise = { quantidade: {}, valores: {} };
+    
+    vendasMes.forEach(v => {
+      const forma = v.forma_pagamento;
+      const valor = parseFloat(v.valor_final || 0);
+      
+      if (forma?.includes('|')) {
+        forma.split('|').forEach(f => {
+          const [tipo, valorParte] = f.split(':');
+          const valorNumerico = parseFloat(valorParte || 0);
+          analise.quantidade[tipo] = (analise.quantidade[tipo] || 0) + 1;
+          analise.valores[tipo] = (analise.valores[tipo] || 0) + valorNumerico;
+        });
+      } else {
+        analise.quantidade[forma] = (analise.quantidade[forma] || 0) + 1;
+        analise.valores[forma] = (analise.valores[forma] || 0) + valor;
+      }
+    });
+    
+    return { vendasMes, analise };
+  };
+
+  const gerarFechamentoDia = () => {
+    const hoje = new Date();
+    const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    const vendasDia = vendas.filter(v => 
+      new Date(v.data_venda) >= inicioDia && v.forma_pagamento !== 'pendente_caixa'
+    );
+    
+    const analise = { quantidade: {}, valores: {} };
+    
+    vendasDia.forEach(v => {
+      const forma = v.forma_pagamento;
+      const valor = parseFloat(v.valor_final || 0);
+      
+      if (forma?.includes('|')) {
+        forma.split('|').forEach(f => {
+          const [tipo, valorParte] = f.split(':');
+          const valorNumerico = parseFloat(valorParte || 0);
+          analise.quantidade[tipo] = (analise.quantidade[tipo] || 0) + 1;
+          analise.valores[tipo] = (analise.valores[tipo] || 0) + valorNumerico;
+        });
+      } else {
+        analise.quantidade[forma] = (analise.quantidade[forma] || 0) + 1;
+        analise.valores[forma] = (analise.valores[forma] || 0) + valor;
+      }
+    });
+    
+    return { vendasDia, analise };
+  };
+
   return (
     <Container>
       <Header>
         <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-          <div>
-            <Logo>VH Gravatas - Tatuapé</Logo>
-            <UserInfo>Gerente | {vendas.length} vendas | {vendedores.length} vendedores</UserInfo>
-          </div>
+          <img 
+            src="/images/logo.png" 
+            alt="VH Logo" 
+            style={{
+              height: '60px', 
+              width: 'auto',
+              filter: 'brightness(0) invert(1)',
+              objectFit: 'contain'
+            }}
+          />
+          <UserInfo>Gerente | {vendas.length} vendas | {vendedores.length} vendedores</UserInfo>
         </div>
         <LogoutButton onClick={onLogout}>Sair</LogoutButton>
       </Header>
@@ -878,11 +1102,9 @@ export default function Gerente({ user, onLogout }) {
                 const vendasMes = vendas.filter(v => 
                   new Date(v.data_venda) >= inicioMes && v.forma_pagamento !== 'pendente_caixa'
                 );
-                const vendasPendentes = vendas.filter(v => v.forma_pagamento === 'pendente_caixa');
                 
                 const valorHoje = vendasHoje.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0);
                 const valorMes = vendasMes.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0);
-                const valorPendente = vendasPendentes.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0);
                 
                 const estoqueTotal = estoque.reduce((sum, p) => sum + (p.estoque_atual || 0), 0);
                 const estoqueBaixo = estoque.filter(p => (p.estoque_atual || 0) < 5).length;
@@ -894,53 +1116,54 @@ export default function Gerente({ user, onLogout }) {
                   {
                     titulo: 'VENDAS HOJE',
                     valor: vendasHoje.length,
-                    subtitulo: `R$ ${valorHoje.toFixed(2)}`,
-                    detalhe: `Ticket médio: R$ ${ticketMedio.toFixed(2)}`,
-                    cor: '#10b981',
-                    icone: '💰'
-                  },
-                  {
-                    titulo: 'VENDAS PENDENTES',
-                    valor: vendasPendentes.length,
-                    subtitulo: `R$ ${valorPendente.toFixed(2)}`,
-                    detalhe: 'Aguardando pagamento',
-                    cor: '#f59e0b',
-                    icone: '⏳'
+                    subtitulo: `${formatarValor(valorHoje)}`,
+                    detalhe: `Ticket médio: ${formatarValor(ticketMedio)}`,
+                    cor: '#10b981'
                   },
                   {
                     titulo: 'ESTOQUE TOTAL',
                     valor: estoqueTotal,
                     subtitulo: `${estoque.length} produtos`,
                     detalhe: `${estoqueBaixo} com estoque baixo`,
-                    cor: estoqueBaixo > 10 ? '#ef4444' : '#3b82f6',
-                    icone: '📦'
+                    cor: estoqueBaixo > 10 ? '#ef4444' : '#3b82f6'
                   },
                   {
                     titulo: 'VENDAS DO MÊS',
-                    valor: `R$ ${(valorMes/1000).toFixed(1)}K`,
+                    valor: `${formatarValor(valorMes)}`,
                     subtitulo: `${vendasMes.length} vendas`,
-                    detalhe: `Valor estoque: R$ ${(valorEstoque/1000).toFixed(0)}K`,
-                    cor: '#8b5cf6',
-                    icone: '📈'
+                    detalhe: `Valor estoque: ${formatarValor(valorEstoque)}`,
+                    cor: '#8b5cf6'
                   }
                 ];
               })().map((indicador, index) => (
-                <div key={index} style={{
-                  background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-                  border: `1px solid ${indicador.cor}40`,
-                  borderRadius: '16px',
-                  padding: '25px',
-                  color: '#ffffff',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    position: 'absolute',
-                    top: '15px',
-                    right: '20px',
-                    fontSize: '2rem',
-                    opacity: 0.3
-                  }}>{indicador.icone}</div>
+                <div 
+                  key={index} 
+                  onClick={() => {
+                    if (index === 0) setActiveTab('vendas');
+                    if (index === 1) setActiveTab('estoque');
+                    if (index === 2) setActiveTab('relatorios');
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                    border: `1px solid ${indicador.cor}40`,
+                    borderRadius: '16px',
+                    padding: '25px',
+                    color: '#ffffff',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                >
+
                   
                   <div style={{
                     fontSize: '2.5rem',
@@ -971,55 +1194,114 @@ export default function Gerente({ user, onLogout }) {
                 </div>
               ))}
             </div>
-            
 
-            
-            {/* Produtos com Estoque Baixo */}
-            {(() => {
-              const produtosBaixo = estoque.filter(p => (p.estoque_atual || 0) < 5).slice(0, 10);
-              return produtosBaixo.length > 0 && (
-                <div style={{
-                  background: '#111111',
-                  border: '1px solid #ef4444',
-                  borderRadius: '12px',
-                  padding: '25px'
-                }}>
-                  <h3 style={{margin: '0 0 20px 0', color: '#ef4444'}}>⚠️ Produtos com Estoque Baixo</h3>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '10px'
-                  }}>
-                    {produtosBaixo.map(produto => (
-                      <div key={produto.id} style={{
-                        background: '#1a1a1a',
-                        border: '1px solid #333',
-                        borderRadius: '6px',
-                        padding: '15px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
+            {/* TOP 3 VENDEDORES DO RANKING */}
+            <div style={{
+              background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+              border: '1px solid #404040',
+              borderRadius: '16px',
+              padding: '25px',
+              marginBottom: '30px'
+            }}>
+              <h3 style={{margin: '0 0 20px 0', color: '#fff', fontSize: '1.3rem'}}>🏆 TOP 3 VENDEDORES DO MÊS</h3>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px'}}>
+                {vendedores
+                  .map(vendedor => {
+                    const hoje = new Date();
+                    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                    const vendasVendedor = vendas.filter(v => 
+                      v.vendedor_nome === vendedor.nome && 
+                      new Date(v.data_venda) >= inicioMes &&
+                      v.forma_pagamento !== 'pendente_caixa'
+                    );
+                    const totalVendedor = vendasVendedor.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0);
+                    const meta = parseFloat(vendedor.meta_mensal || 0);
+                    const percentual = meta > 0 ? (totalVendedor / meta) * 100 : 0;
+                    return { ...vendedor, totalVendedor, meta, percentual, quantidadeVendas: vendasVendedor.length };
+                  })
+                  .sort((a, b) => b.totalVendedor - a.totalVendedor)
+                  .slice(0, 3)
+                  .map((vendedor, index) => {
+                    const posicoes = ['1°', '2°', '3°'];
+                    const cores = ['#FFD700', '#C0C0C0', '#CD7F32'];
+                    return (
+                      <div key={vendedor.id} style={{
+                        background: '#111111',
+                        border: `2px solid ${cores[index]}`,
+                        borderRadius: '12px',
+                        padding: '20px',
+                        textAlign: 'center',
+                        position: 'relative',
+                        overflow: 'hidden'
                       }}>
-                        <div>
-                          <div style={{fontWeight: 'bold', fontSize: '0.9rem'}}>{produto.nome}</div>
-                          <div style={{fontSize: '0.8rem', color: '#999'}}>{produto.codigo}</div>
-                        </div>
                         <div style={{
-                          background: '#ef4444',
-                          color: 'white',
-                          padding: '4px 8px',
-                          borderRadius: '12px',
-                          fontSize: '0.8rem',
+                          position: 'absolute',
+                          top: '-10px',
+                          right: '-10px',
+                          background: cores[index],
+                          color: '#000',
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.2rem',
                           fontWeight: 'bold'
                         }}>
-                          {produto.estoque_atual}
+                          {index + 1}
+                        </div>
+                        
+
+                        
+                        <div style={{
+                          fontSize: '1.1rem',
+                          fontWeight: 'bold',
+                          color: '#fff',
+                          marginBottom: '8px'
+                        }}>
+                          {vendedor.nome}
+                        </div>
+                        
+                        <div style={{
+                          fontSize: '1.5rem',
+                          fontWeight: '800',
+                          color: cores[index],
+                          marginBottom: '8px'
+                        }}>
+                          {formatarValor(vendedor.totalVendedor)}
+                        </div>
+                        
+                        <div style={{
+                          fontSize: '0.9rem',
+                          color: '#ccc',
+                          marginBottom: '5px'
+                        }}>
+                          {vendedor.quantidadeVendas} vendas
+                        </div>
+                        
+                        <div style={{
+                          fontSize: '0.8rem',
+                          color: vendedor.percentual >= 100 ? '#10b981' : vendedor.percentual >= 70 ? '#f59e0b' : '#ef4444',
+                          fontWeight: 'bold'
+                        }}>
+                          {vendedor.percentual.toFixed(1)}% da meta
+                        </div>
+                        
+                        <div style={{
+                          fontSize: '0.7rem',
+                          color: '#999',
+                          marginTop: '5px'
+                        }}>
+                          Ticket: {formatarValor(vendedor.quantidadeVendas > 0 ? vendedor.totalVendedor / vendedor.quantidadeVendas : 0)}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
+                    );
+                  })
+                }
+              </div>
+            </div>
+
           </>
         )}
 
@@ -1047,13 +1329,12 @@ export default function Gerente({ user, onLogout }) {
                   marginBottom: '15px'
                 }}
               >
-                <option value="">Selecione o tipo *</option>
-                <option value="terno" style={{background: '#333', color: '#fff'}}>Terno</option>
-                <option value="camisa" style={{background: '#333', color: '#fff'}}>Camisa</option>
-                <option value="gravata" style={{background: '#333', color: '#fff'}}>Gravata</option>
-                <option value="costume" style={{background: '#333', color: '#fff'}}>Costume</option>
-                <option value="acessorio" style={{background: '#333', color: '#fff'}}>Acessório</option>
-                <option value="pre venda" style={{background: '#333', color: '#fff'}}>Pré Venda</option>
+                <option value="">Selecione a categoria *</option>
+                {categorias.map(categoria => (
+                  <option key={categoria} value={categoria} style={{background: '#333', color: '#fff'}}>
+                    {categoria.charAt(0).toUpperCase() + categoria.slice(1)}
+                  </option>
+                ))}
               </select>
               <Input placeholder="Cor" value={novoProduto.cor} onChange={(e) => setNovoProduto({...novoProduto, cor: e.target.value})} />
               <Input placeholder="Tamanho" value={novoProduto.tamanho} onChange={(e) => setNovoProduto({...novoProduto, tamanho: e.target.value})} />
@@ -1066,11 +1347,25 @@ export default function Gerente({ user, onLogout }) {
               <h3 style={{margin: '0 0 15px 0', fontSize: '1.2rem'}}>Produtos ({produtosFiltrados.length})</h3>
               <div style={{display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap'}}>
                 <ActionButton 
+                  className="success" 
+                  onClick={() => setShowImportModal(true)}
+                  style={{fontSize: '12px', padding: '10px 14px'}}
+                >
+                  Importar CSV
+                </ActionButton>
+                <ActionButton 
                   className="warning" 
                   onClick={() => setModalAberto('precoLote')}
                   style={{fontSize: '12px', padding: '10px 14px'}}
                 >
-                  💰 Preços Lote
+                  Preços Lote
+                </ActionButton>
+                <ActionButton 
+                  className="primary" 
+                  onClick={() => setShowCategoriaModal(true)}
+                  style={{fontSize: '12px', padding: '10px 14px'}}
+                >
+                  Gerenciar Categorias
                 </ActionButton>
                 <select 
                   value={ordenacao}
@@ -1094,7 +1389,7 @@ export default function Gerente({ user, onLogout }) {
             </div>
             
             <Input 
-              placeholder="🔍 Buscar produtos..."
+              placeholder="Buscar produtos..."
               value={filtroEstoque}
               onChange={(e) => setFiltroEstoque(e.target.value)}
               style={{marginBottom: '20px', fontSize: '16px'}}
@@ -1105,7 +1400,7 @@ export default function Gerente({ user, onLogout }) {
                 <tr>
                   <Th>Código</Th>
                   <Th>Nome</Th>
-                  <Th>Tipo</Th>
+                  <Th>Categoria</Th>
                   <Th>Cor</Th>
                   <Th>Tamanho</Th>
                   <Th>Preço</Th>
@@ -1121,7 +1416,7 @@ export default function Gerente({ user, onLogout }) {
                     <Td>{p.tipo}</Td>
                     <Td>{p.cor}</Td>
                     <Td>{p.tamanho}</Td>
-                    <Td>R$ {parseFloat(p.preco_venda || 0).toFixed(2)}</Td>
+                    <Td>{formatarValor(parseFloat(p.preco_venda || 0))}</Td>
                     <Td style={{color: p.estoque_atual < 5 ? '#ff6b6b' : '#10b981', fontWeight: 'bold'}}>{p.estoque_atual}</Td>
                     <Td>
                       <ActionsDropdown>
@@ -1131,7 +1426,7 @@ export default function Gerente({ user, onLogout }) {
                             setDropdownAberto(dropdownAberto === p.id ? null : p.id);
                           }}
                         >
-                          ⚙️ Ações
+                          Ações
                           <span style={{fontSize: '10px'}}>▼</span>
                         </DropdownButton>
                         
@@ -1145,7 +1440,7 @@ export default function Gerente({ user, onLogout }) {
                                 setDropdownAberto(null);
                               }}
                             >
-                              📦 Ajustar Estoque
+                              Ajustar Estoque
                             </DropdownItem>
                             
                             <DropdownItem 
@@ -1157,7 +1452,7 @@ export default function Gerente({ user, onLogout }) {
                                 setDropdownAberto(null);
                               }}
                             >
-                              💰 Alterar Preço
+                              Alterar Preço
                             </DropdownItem>
                             
                             <DropdownItem 
@@ -1167,7 +1462,7 @@ export default function Gerente({ user, onLogout }) {
                                 setDropdownAberto(null);
                               }}
                             >
-                              ✏️ Editar Produto
+                              Editar Produto
                             </DropdownItem>
                             
                             <DropdownItem 
@@ -1185,7 +1480,7 @@ export default function Gerente({ user, onLogout }) {
                                 setDropdownAberto(null);
                               }}
                             >
-                              🏷️ Alterar Código
+                              Alterar Código
                             </DropdownItem>
                             
                             <DropdownItem 
@@ -1195,7 +1490,7 @@ export default function Gerente({ user, onLogout }) {
                                 setDropdownAberto(null);
                               }}
                             >
-                              🗑️ Excluir Produto
+                              Excluir Produto
                             </DropdownItem>
                           </DropdownMenu>
                         )}
@@ -1222,12 +1517,12 @@ export default function Gerente({ user, onLogout }) {
                 </tr>
               </thead>
               <tbody>
-                {vendas.map(v => (
+                {vendas.filter(v => v.forma_pagamento !== 'pendente_caixa').map(v => (
                   <tr key={v.id}>
                     <Td>{v.numero_venda}</Td>
                     <Td>{new Date(v.data_venda).toLocaleString('pt-BR')}</Td>
                     <Td>{v.cliente_nome || '-'}</Td>
-                    <Td>R$ {parseFloat(v.valor_final || 0).toFixed(2)}</Td>
+                    <Td>{formatarValor(parseFloat(v.valor_final || 0))}</Td>
                     <Td>{v.forma_pagamento || 'Pendente'}</Td>
                   </tr>
                 ))}
@@ -1270,7 +1565,7 @@ export default function Gerente({ user, onLogout }) {
               <Button onClick={definirMeta}>Definir Meta</Button>
             </div>
 
-            {/* Performance dos Vendedores */}
+            {/* Ranking dos Vendedores */}
             <div style={{
               background: '#111111',
               border: '1px solid #333',
@@ -1278,57 +1573,59 @@ export default function Gerente({ user, onLogout }) {
               padding: '25px',
               marginBottom: '30px'
             }}>
-              <h3 style={{margin: '0 0 20px 0', color: '#fff'}}>🏆 Performance dos Vendedores - Este Mês</h3>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '15px'
-              }}>
-                {vendedores.map(vendedor => {
-                  const hoje = new Date();
-                  const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-                  const vendasVendedor = vendas.filter(v => 
-                    v.vendedor_nome === vendedor.nome && 
-                    new Date(v.data_venda) >= inicioMes &&
-                    v.forma_pagamento !== 'pendente_caixa'
-                  );
-                  const totalVendedor = vendasVendedor.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0);
-                  const meta = parseFloat(vendedor.meta_mensal || 0);
-                  const percentual = meta > 0 ? (totalVendedor / meta) * 100 : 0;
-                  
-                  return (
+              <h3 style={{margin: '0 0 20px 0', color: '#fff'}}>Ranking dos Vendedores - Este Mês</h3>
+              <div style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                {vendedores
+                  .map(vendedor => {
+                    const hoje = new Date();
+                    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                    const vendasVendedor = vendas.filter(v => 
+                      v.vendedor_nome === vendedor.nome && 
+                      new Date(v.data_venda) >= inicioMes &&
+                      v.forma_pagamento !== 'pendente_caixa'
+                    );
+                    const totalVendedor = vendasVendedor.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0);
+                    const meta = parseFloat(vendedor.meta_mensal || 0);
+                    const percentual = meta > 0 ? (totalVendedor / meta) * 100 : 0;
+                    return { ...vendedor, totalVendedor, meta, percentual };
+                  })
+                  .sort((a, b) => b.percentual - a.percentual)
+                  .map((vendedor, index) => (
                     <div key={vendedor.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '15px',
                       background: '#1a1a1a',
-                      border: '1px solid #333',
                       borderRadius: '8px',
-                      padding: '20px'
+                      border: '1px solid #333'
                     }}>
-                      <div style={{fontWeight: 'bold', marginBottom: '10px'}}>{vendedor.nome}</div>
-                      <div style={{fontSize: '1.5rem', fontWeight: '700', color: percentual >= 100 ? '#10b981' : percentual >= 70 ? '#f59e0b' : '#ef4444'}}>
-                        R$ {totalVendedor.toFixed(0)}
+                      <div style={{
+                        fontSize: '1.2rem',
+                        fontWeight: 'bold',
+                        color: '#fff',
+                        minWidth: '30px',
+                        marginRight: '15px'
+                      }}>
+                        {index + 1}
                       </div>
-                      <div style={{fontSize: '0.9rem', color: '#999', marginBottom: '8px'}}>
-                        Meta: R$ {meta.toFixed(0)} ({percentual.toFixed(1)}%)
+                      <div style={{flex: 1}}>
+                        <div style={{fontSize: '1rem', fontWeight: 'bold', color: '#fff'}}>
+                          {vendedor.nome}
+                        </div>
+                        <div style={{fontSize: '0.9rem', color: '#999'}}>
+                          Meta: {formatarValor(vendedor.meta)}
+                        </div>
                       </div>
                       <div style={{
-                        background: '#333',
-                        borderRadius: '4px',
-                        height: '6px',
-                        overflow: 'hidden'
+                        fontSize: '1.1rem',
+                        fontWeight: 'bold',
+                        color: vendedor.percentual >= 100 ? '#10b981' : vendedor.percentual >= 70 ? '#f59e0b' : '#ef4444'
                       }}>
-                        <div style={{
-                          background: percentual >= 100 ? '#10b981' : percentual >= 70 ? '#f59e0b' : '#ef4444',
-                          height: '100%',
-                          width: `${Math.min(percentual, 100)}%`,
-                          transition: 'width 0.3s ease'
-                        }}></div>
-                      </div>
-                      <div style={{fontSize: '0.8rem', color: '#ccc', marginTop: '5px'}}>
-                        {vendasVendedor.length} vendas
+                        {vendedor.percentual.toFixed(1)}%
                       </div>
                     </div>
-                  );
-                })}
+                  ))
+                }
               </div>
             </div>
 
@@ -1358,8 +1655,8 @@ export default function Gerente({ user, onLogout }) {
                   return (
                     <tr key={vendedor.id}>
                       <Td>{vendedor.nome}</Td>
-                      <Td>{meta > 0 ? `R$ ${meta.toFixed(2)}` : 'Não definida'}</Td>
-                      <Td>R$ {totalMes.toFixed(2)}</Td>
+                      <Td>{meta > 0 ? formatarValor(meta) : 'Não definida'}</Td>
+                      <Td>{formatarValor(totalMes)}</Td>
                       <Td style={{color: percentual >= 100 ? '#10b981' : percentual >= 70 ? '#f59e0b' : '#ff6b6b', fontWeight: 'bold'}}>
                         {percentual.toFixed(1)}%
                       </Td>
@@ -1381,7 +1678,21 @@ export default function Gerente({ user, onLogout }) {
                   onClick={() => setShowSaidaModal(true)}
                   style={{fontSize: '14px', padding: '12px 16px'}}
                 >
-                  💸 Nova Saída
+                  Nova Saída
+                </ActionButton>
+                <ActionButton 
+                  className="primary" 
+                  onClick={() => setModalAberto('fechamentoMes')}
+                  style={{fontSize: '14px', padding: '12px 16px'}}
+                >
+                  Fechamento de Vendas do Mes
+                </ActionButton>
+                <ActionButton 
+                  className="success" 
+                  onClick={() => setModalAberto('fechamentoDia')}
+                  style={{fontSize: '14px', padding: '12px 16px'}}
+                >
+                  Fechamento do Dia
                 </ActionButton>
                 <Button onClick={() => {
                   const relatorio = gerarRelatorioCompleto();
@@ -1404,13 +1715,13 @@ export default function Gerente({ user, onLogout }) {
                 }}>
                   <h3 style={{margin: '0 0 15px 0', textTransform: 'uppercase'}}>{periodo === 'dia' ? 'Hoje' : periodo === 'semana' ? 'Esta Semana' : 'Este Mês'}</h3>
                   <div style={{fontSize: '2rem', fontWeight: '800', color: '#00ff88', marginBottom: '10px'}}>
-                    R$ {(relatorios.metricas[periodo]?.total || 0).toFixed(2)}
+                    {formatarValor(relatorios.metricas[periodo]?.total || 0)}
                   </div>
                   <div style={{fontSize: '0.9rem', marginBottom: '5px'}}>
                     {relatorios.metricas[periodo]?.quantidade || 0} vendas
                   </div>
                   <div style={{fontSize: '0.9rem', color: '#cccccc'}}>
-                    Ticket Médio: R$ {(relatorios.metricas[periodo]?.ticketMedio || 0).toFixed(2)}
+                    Ticket Médio: {formatarValor(relatorios.metricas[periodo]?.ticketMedio || 0)}
                   </div>
                 </div>
               ))}
@@ -1448,7 +1759,7 @@ export default function Gerente({ user, onLogout }) {
                 {Object.entries(relatorios.metricas.mes?.porPagamento || {}).map(([tipo, valor]) => (
                   <div key={tipo} style={{textAlign: 'center'}}>
                     <div style={{fontSize: '1.5rem', fontWeight: '700', color: '#00ff88'}}>
-                      R$ {parseFloat(valor).toFixed(2)}
+                      {formatarValor(parseFloat(valor))}
                     </div>
                     <div style={{fontSize: '0.8rem', textTransform: 'uppercase', color: '#cccccc'}}>
                       {tipo.replace('_', ' ')}
@@ -1458,43 +1769,11 @@ export default function Gerente({ user, onLogout }) {
               </div>
             </div>
 
-            {/* Movimentações do Caixa */}
-            <div style={{background: '#111111', border: '1px solid #333333', borderRadius: '8px', padding: '20px', marginBottom: '30px'}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
-                <h4 style={{margin: 0}}>Movimentações do Caixa - Entradas e Saídas (Recentes)</h4>
-                <div style={{fontSize: '0.9rem', color: '#888'}}>
-                  Total de {relatorios.movimentacoesCaixa.length} movimentações
-                </div>
-              </div>
-              <Table>
-                <thead>
-                  <tr>
-                    <Th>Data</Th>
-                    <Th>Tipo</Th>
-                    <Th>Valor</Th>
-                    <Th>Descrição</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {relatorios.movimentacoesCaixa.slice(0, 15).map(mov => (
-                    <tr key={mov.id}>
-                      <Td>{new Date(mov.created_at).toLocaleDateString('pt-BR')}</Td>
-                      <Td style={{color: mov.tipo === 'entrada' ? '#00ff88' : '#ff6b6b'}}>
-                        {mov.tipo === 'entrada' ? 'Entrada' : mov.tipo === 'saida' ? 'Saída' : 'Saída'}
-                      </Td>
-                      <Td style={{color: mov.tipo === 'entrada' ? '#00ff88' : '#ff6b6b', fontWeight: '600'}}>
-                        {mov.tipo === 'entrada' ? '+' : '-'}R$ {parseFloat(mov.valor).toFixed(2)}
-                      </Td>
-                      <Td>{mov.descricao}</Td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
+
 
             {/* Relatório de Estoque Melhorado */}
             <div style={{background: '#111111', border: '1px solid #333333', borderRadius: '12px', padding: '25px'}}>
-              <h4 style={{margin: '0 0 25px 0', color: '#fff', fontSize: '1.2rem'}}>📦 Relatório de Estoque</h4>
+              <h4 style={{margin: '0 0 25px 0', color: '#fff', fontSize: '1.2rem'}}>Relatório de Estoque</h4>
               <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '25px'}}>
                 {[
                   {
@@ -1519,11 +1798,10 @@ export default function Gerente({ user, onLogout }) {
                     detalhe: `${((estoque.filter(p => (p.estoque_atual || 0) < 5).length / estoque.length) * 100).toFixed(1)}% do total`
                   },
                   {
-                    valor: `R$ ${(estoque.reduce((sum, p) => sum + ((p.estoque_atual || 0) * (p.preco_venda || 0)), 0) / 1000).toFixed(0)}K`,
+                    valor: formatarValor(estoque.reduce((sum, p) => sum + ((p.estoque_atual || 0) * (p.preco_venda || 0)), 0)),
                     titulo: 'VALOR TOTAL',
                     cor: '#8b5cf6',
-                    icone: '💰',
-                    detalhe: `Ticket médio: R$ ${(estoque.reduce((sum, p) => sum + (p.preco_venda || 0), 0) / estoque.length).toFixed(0)}`
+                    detalhe: `Ticket médio: ${formatarValor(estoque.reduce((sum, p) => sum + (p.preco_venda || 0), 0) / estoque.length)}`
                   }
                 ].map((item, index) => (
                   <div key={index} style={{
@@ -1534,13 +1812,7 @@ export default function Gerente({ user, onLogout }) {
                     textAlign: 'center',
                     position: 'relative'
                   }}>
-                    <div style={{
-                      position: 'absolute',
-                      top: '15px',
-                      right: '15px',
-                      fontSize: '1.5rem',
-                      opacity: 0.3
-                    }}>{item.icone}</div>
+
                     
                     <div style={{
                       fontSize: '2.2rem',
@@ -1593,7 +1865,7 @@ export default function Gerente({ user, onLogout }) {
                         {data.count} produtos | {data.stock} unidades
                       </div>
                       <div style={{fontSize: '0.7rem', color: '#10b981'}}>
-                        R$ {(data.value / 1000).toFixed(0)}K
+                        {formatarValor(data.value)}
                       </div>
                     </div>
                   ))}
@@ -1609,14 +1881,14 @@ export default function Gerente({ user, onLogout }) {
         <Modal onClick={() => setModalAberto(null)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
-              <h3>💰 Alterar Preço</h3>
+              <h3>Alterar Preço</h3>
               <CloseButton onClick={() => setModalAberto(null)}>×</CloseButton>
             </ModalHeader>
             
             <div style={{marginBottom: '20px'}}>
               <strong>Produto:</strong> {produtoEditando?.nome}<br/>
               <strong>Código:</strong> {produtoEditando?.codigo}<br/>
-              <strong>Preço atual:</strong> R$ {parseFloat(produtoEditando?.preco_venda || 0).toFixed(2)}
+              <strong>Preço atual:</strong> {formatarValor(parseFloat(produtoEditando?.preco_venda || 0))}
             </div>
             
             <Input 
@@ -1647,7 +1919,7 @@ export default function Gerente({ user, onLogout }) {
         <Modal onClick={() => setModalAberto(null)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
-              <h3>✏️ Editar Produto</h3>
+              <h3>Editar Produto</h3>
               <CloseButton onClick={() => setModalAberto(null)}>×</CloseButton>
             </ModalHeader>
             
@@ -1726,7 +1998,7 @@ export default function Gerente({ user, onLogout }) {
         <Modal onClick={() => setModalAberto(null)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
-              <h3>💰 Alterar Preços em Lote</h3>
+              <h3>Alterar Preços em Lote</h3>
               <CloseButton onClick={() => setModalAberto(null)}>×</CloseButton>
             </ModalHeader>
             
@@ -1784,7 +2056,7 @@ export default function Gerente({ user, onLogout }) {
         <Modal onClick={() => setShowSaidaModal(false)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
-              <h3>💸 Registrar Saída de Caixa</h3>
+              <h3>Registrar Saída de Caixa</h3>
               <CloseButton onClick={() => setShowSaidaModal(false)}>×</CloseButton>
             </ModalHeader>
             
@@ -1830,7 +2102,264 @@ export default function Gerente({ user, onLogout }) {
                 disabled={!valorSaida || !observacaoSaida.trim()}
                 style={{opacity: (!valorSaida || !observacaoSaida.trim()) ? 0.5 : 1}}
               >
-                💸 Registrar Saída
+                Registrar Saída
+              </ActionButton>
+            </div>
+          </ModalContent>
+        </Modal>
+      )}
+      
+      {/* Modal para Importar CSV */}
+      {showImportModal && (
+        <Modal onClick={() => setShowImportModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()} style={{maxWidth: '600px'}}>
+            <ModalHeader>
+              <h3>Importar Produtos via CSV</h3>
+              <CloseButton onClick={() => setShowImportModal(false)}>×</CloseButton>
+            </ModalHeader>
+            
+            <div style={{marginBottom: '20px', padding: '15px', background: '#2a2a2a', borderRadius: '8px'}}>
+              <h4 style={{margin: '0 0 10px 0', color: '#00ff88'}}>Formatos Aceitos:</h4>
+              <div style={{fontSize: '12px', color: '#ccc', fontFamily: 'monospace'}}>
+                codigo,nome,tipo,cor,tamanho,preco_venda,estoque_atual,estoque_minimo,ativo
+              </div>
+              <div style={{fontSize: '11px', color: '#999', marginTop: '8px'}}>
+                ✅ CSV e XLSX: Importação automática<br/>
+                ✅ XLSX é convertido para CSV automaticamente<br/>
+                ✅ Use ponto para decimais (89.90)<br/>
+                ✅ Campo ativo: true/false, sim/não
+              </div>
+            </div>
+            
+            <div style={{marginBottom: '20px'}}>
+              <label style={{display: 'block', marginBottom: '10px', color: '#ccc'}}>Selecionar Arquivo (CSV recomendado):</label>
+              <input
+                type="file"
+                accept=".csv,.xlsx"
+                onChange={(e) => setCsvFile(e.target.files[0])}
+                style={{
+                  width: '100%',
+                  padding: '15px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid #333333',
+                  borderRadius: '8px',
+                  color: '#ffffff',
+                  fontSize: '16px'
+                }}
+              />
+            </div>
+            
+            {importLogs.length > 0 && (
+              <div style={{
+                marginBottom: '20px',
+                padding: '15px',
+                background: '#0a0a0a',
+                borderRadius: '8px',
+                maxHeight: '200px',
+                overflowY: 'auto',
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                border: '1px solid #333'
+              }}>
+                {importLogs.map((log, index) => (
+                  <div key={index} style={{marginBottom: '4px', color: '#ccc'}}>
+                    {log}
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
+              <ActionButton 
+                className="secondary" 
+                onClick={() => {
+                  setShowImportModal(false);
+                  setCsvFile(null);
+                  setImportLogs([]);
+                }}
+              >
+                Cancelar
+              </ActionButton>
+              <ActionButton 
+                className="success" 
+                onClick={importarCSV}
+                disabled={!csvFile || importing}
+                style={{opacity: (!csvFile || importing) ? 0.5 : 1}}
+              >
+                {importing ? 'Importando...' : 'Importar CSV'}
+              </ActionButton>
+            </div>
+          </ModalContent>
+        </Modal>
+      )}
+      
+      {/* Modal Fechamento do Mês */}
+      {modalAberto === 'fechamentoMes' && (() => {
+        const { vendasMes, analise } = gerarFechamentoMes();
+        const totalVendas = vendasMes.length;
+        const totalValor = vendasMes.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0);
+        
+        return (
+          <Modal onClick={() => setModalAberto(null)}>
+            <ModalContent onClick={(e) => e.stopPropagation()} style={{maxWidth: '700px'}}>
+              <ModalHeader>
+                <h3>Fechamento de Vendas do Mês</h3>
+                <CloseButton onClick={() => setModalAberto(null)}>×</CloseButton>
+              </ModalHeader>
+              
+              <div style={{marginBottom: '20px'}}>
+                <h4>Resumo Geral</h4>
+                <div style={{background: '#2a2a2a', padding: '15px', borderRadius: '8px'}}>
+                  <div>Total de Vendas: {totalVendas}</div>
+                  <div>Valor Total: {formatarValor(totalValor)}</div>
+                  <div>Ticket Médio: {formatarValor(totalVendas > 0 ? totalValor / totalVendas : 0)}</div>
+                </div>
+              </div>
+              
+              <div style={{marginBottom: '20px'}}>
+                <h4>Por Forma de Pagamento</h4>
+                <div style={{background: '#2a2a2a', padding: '15px', borderRadius: '8px'}}>
+                  {Object.entries(analise.valores)
+                    .sort(([,a], [,b]) => b - a)
+                    .map(([forma, valor]) => {
+                      const qtd = analise.quantidade[forma] || 0;
+                      const percentual = totalValor > 0 ? ((valor / totalValor) * 100).toFixed(1) : '0.0';
+                      return (
+                        <div key={forma} style={{marginBottom: '10px', padding: '10px', background: '#333', borderRadius: '4px'}}>
+                          <div style={{fontWeight: 'bold'}}>{forma.replace('_', ' ').toUpperCase()}</div>
+                          <div>{qtd} vendas - {formatarValor(valor)} ({percentual}%)</div>
+                        </div>
+                      );
+                    })
+                  }
+                </div>
+              </div>
+              
+              <div style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
+                <ActionButton className="secondary" onClick={() => setModalAberto(null)}>
+                  Fechar
+                </ActionButton>
+              </div>
+            </ModalContent>
+          </Modal>
+        );
+      })()}
+      
+      {/* Modal Fechamento do Dia */}
+      {modalAberto === 'fechamentoDia' && (() => {
+        const { vendasDia, analise } = gerarFechamentoDia();
+        const totalVendas = vendasDia.length;
+        const totalValor = vendasDia.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0);
+        
+        return (
+          <Modal onClick={() => setModalAberto(null)}>
+            <ModalContent onClick={(e) => e.stopPropagation()} style={{maxWidth: '700px'}}>
+              <ModalHeader>
+                <h3>Fechamento do Dia</h3>
+                <CloseButton onClick={() => setModalAberto(null)}>×</CloseButton>
+              </ModalHeader>
+              
+              <div style={{marginBottom: '20px'}}>
+                <h4>Resumo do Dia</h4>
+                <div style={{background: '#2a2a2a', padding: '15px', borderRadius: '8px'}}>
+                  <div>Total de Vendas: {totalVendas}</div>
+                  <div>Valor Total: {formatarValor(totalValor)}</div>
+                  <div>Ticket Médio: {formatarValor(totalVendas > 0 ? totalValor / totalVendas : 0)}</div>
+                </div>
+              </div>
+              
+              <div style={{marginBottom: '20px'}}>
+                <h4>Por Forma de Pagamento</h4>
+                <div style={{background: '#2a2a2a', padding: '15px', borderRadius: '8px'}}>
+                  {Object.entries(analise.valores).length > 0 ? 
+                    Object.entries(analise.valores)
+                      .sort(([,a], [,b]) => b - a)
+                      .map(([forma, valor]) => {
+                        const qtd = analise.quantidade[forma] || 0;
+                        const percentual = totalValor > 0 ? ((valor / totalValor) * 100).toFixed(1) : '0.0';
+                        return (
+                          <div key={forma} style={{marginBottom: '10px', padding: '10px', background: '#333', borderRadius: '4px'}}>
+                            <div style={{fontWeight: 'bold'}}>{forma.replace('_', ' ').toUpperCase()}</div>
+                            <div>{qtd} vendas - {formatarValor(valor)} ({percentual}%)</div>
+                          </div>
+                        );
+                      })
+                    : <div style={{color: '#999'}}>Nenhuma venda hoje</div>
+                  }
+                </div>
+              </div>
+              
+              <div style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
+                <ActionButton className="secondary" onClick={() => setModalAberto(null)}>
+                  Fechar
+                </ActionButton>
+              </div>
+            </ModalContent>
+          </Modal>
+        );
+      })()}
+      
+      {/* Modal para Gerenciar Categorias */}
+      {showCategoriaModal && (
+        <Modal onClick={() => setShowCategoriaModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()} style={{maxWidth: '500px'}}>
+            <ModalHeader>
+              <h3>Gerenciar Categorias</h3>
+              <CloseButton onClick={() => setShowCategoriaModal(false)}>×</CloseButton>
+            </ModalHeader>
+            
+            <div style={{marginBottom: '20px'}}>
+              <h4>Categorias Existentes:</h4>
+              <div style={{background: '#2a2a2a', padding: '15px', borderRadius: '8px', marginBottom: '15px'}}>
+                {categorias.map((categoria, index) => (
+                  <div key={index} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '8px 0',
+                    borderBottom: index < categorias.length - 1 ? '1px solid #333' : 'none'
+                  }}>
+                    <span>{categoria.charAt(0).toUpperCase() + categoria.slice(1)}</span>
+                    <ActionButton 
+                      className="danger"
+                      onClick={() => {
+                        if (confirm(`Excluir categoria "${categoria}"?`)) {
+                          setCategorias(categorias.filter(c => c !== categoria));
+                        }
+                      }}
+                      style={{fontSize: '10px', padding: '4px 8px'}}
+                    >
+                      Excluir
+                    </ActionButton>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div style={{marginBottom: '20px'}}>
+              <h4>Adicionar Nova Categoria:</h4>
+              <Input
+                placeholder="Nome da categoria"
+                value={novaCategoria}
+                onChange={(e) => setNovaCategoria(e.target.value)}
+              />
+              <ActionButton 
+                className="success"
+                onClick={() => {
+                  if (novaCategoria.trim() && !categorias.includes(novaCategoria.trim())) {
+                    setCategorias([...categorias, novaCategoria.trim()]);
+                    setNovaCategoria('');
+                  }
+                }}
+                disabled={!novaCategoria.trim() || categorias.includes(novaCategoria.trim())}
+              >
+                Adicionar Categoria
+              </ActionButton>
+            </div>
+            
+            <div style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
+              <ActionButton className="secondary" onClick={() => setShowCategoriaModal(false)}>
+                Fechar
               </ActionButton>
             </div>
           </ModalContent>

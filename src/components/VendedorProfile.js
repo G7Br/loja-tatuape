@@ -3,7 +3,7 @@ import { supabase } from '../utils/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function VendedorProfile({ user, onBack }) {
-  const { theme } = useTheme();
+  const { darkMode } = useTheme();
   const [vendas, setVendas] = useState([]);
   const [stats, setStats] = useState({
     totalMes: 0,
@@ -51,8 +51,8 @@ export default function VendedorProfile({ user, onBack }) {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      background: theme.background, 
-      color: theme.text,
+      background: darkMode ? '#0a0a0a' : '#ffffff', 
+      color: darkMode ? '#ffffff' : '#000000',
       padding: '1rem'
     }}>
       {/* Header */}
@@ -65,9 +65,9 @@ export default function VendedorProfile({ user, onBack }) {
       }}>
         <button onClick={onBack} style={{
           padding: '8px 16px',
-          background: theme.surface,
-          color: theme.text,
-          border: `1px solid ${theme.border}`,
+          background: darkMode ? '#1a1a1a' : '#f8f9fa',
+          color: darkMode ? '#ffffff' : '#000000',
+          border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
           borderRadius: '8px',
           cursor: 'pointer'
         }}>
@@ -84,31 +84,31 @@ export default function VendedorProfile({ user, onBack }) {
         marginBottom: '2rem'
       }}>
         <div style={{
-          background: theme.surfaceGradient,
-          border: `1px solid ${theme.border}`,
+          background: darkMode ? '#1a1a1a' : '#ffffff',
+          border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
           borderRadius: '12px',
           padding: '1.5rem'
         }}>
-          <h3 style={{ margin: '0 0 0.5rem 0', color: theme.textSecondary }}>Hoje</h3>
-          <div style={{ fontSize: '1.8rem', fontWeight: '700', color: theme.success }}>
+          <h3 style={{ margin: '0 0 0.5rem 0', color: darkMode ? '#888' : '#666' }}>Hoje</h3>
+          <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#10b981' }}>
             R$ {stats.totalDia.toFixed(2)}
           </div>
-          <div style={{ fontSize: '0.9rem', color: theme.textSecondary }}>
+          <div style={{ fontSize: '0.9rem', color: darkMode ? '#888' : '#666' }}>
             {stats.vendasDia} vendas
           </div>
         </div>
 
         <div style={{
-          background: theme.surfaceGradient,
-          border: `1px solid ${theme.border}`,
+          background: darkMode ? '#1a1a1a' : '#ffffff',
+          border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
           borderRadius: '12px',
           padding: '1.5rem'
         }}>
-          <h3 style={{ margin: '0 0 0.5rem 0', color: theme.textSecondary }}>Este Mês</h3>
-          <div style={{ fontSize: '1.8rem', fontWeight: '700', color: theme.accent }}>
+          <h3 style={{ margin: '0 0 0.5rem 0', color: darkMode ? '#888' : '#666' }}>Este Mês</h3>
+          <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#3b82f6' }}>
             R$ {stats.totalMes.toFixed(2)}
           </div>
-          <div style={{ fontSize: '0.9rem', color: theme.textSecondary }}>
+          <div style={{ fontSize: '0.9rem', color: darkMode ? '#888' : '#666' }}>
             {stats.vendasMes} vendas
           </div>
         </div>
@@ -117,8 +117,8 @@ export default function VendedorProfile({ user, onBack }) {
       {/* Meta */}
       {metaMensal > 0 && (
         <div style={{
-          background: theme.surfaceGradient,
-          border: `1px solid ${theme.border}`,
+          background: darkMode ? '#1a1a1a' : '#ffffff',
+          border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
           borderRadius: '12px',
           padding: '1.5rem',
           marginBottom: '2rem'
@@ -130,13 +130,13 @@ export default function VendedorProfile({ user, onBack }) {
           <div style={{
             width: '100%',
             height: '8px',
-            background: theme.borderLight,
+            background: darkMode ? '#333' : '#e5e7eb',
             borderRadius: '4px',
             overflow: 'hidden'
           }}>
             <div style={{
               height: '100%',
-              background: percentualMeta >= 100 ? theme.success : theme.accent,
+              background: percentualMeta >= 100 ? '#10b981' : '#3b82f6',
               width: `${Math.min(percentualMeta, 100)}%`,
               transition: 'width 0.3s ease'
             }}></div>
@@ -144,7 +144,7 @@ export default function VendedorProfile({ user, onBack }) {
           <div style={{ 
             marginTop: '0.5rem', 
             fontSize: '1.1rem', 
-            color: percentualMeta >= 100 ? theme.success : theme.text 
+            color: percentualMeta >= 100 ? '#10b981' : (darkMode ? '#ffffff' : '#000000') 
           }}>
             {percentualMeta.toFixed(1)}%
           </div>
@@ -153,15 +153,15 @@ export default function VendedorProfile({ user, onBack }) {
 
       {/* Vendas */}
       <div style={{
-        background: theme.surfaceGradient,
-        border: `1px solid ${theme.border}`,
+        background: darkMode ? '#1a1a1a' : '#ffffff',
+        border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
         borderRadius: '12px',
         padding: '1.5rem'
       }}>
         <h3 style={{ margin: '0 0 1rem 0' }}>Minhas Vendas</h3>
         <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
           {vendas.length === 0 ? (
-            <p style={{ color: theme.textSecondary, textAlign: 'center', padding: '2rem' }}>
+            <p style={{ color: darkMode ? '#888' : '#666', textAlign: 'center', padding: '2rem' }}>
               Nenhuma venda encontrada
             </p>
           ) : (
@@ -172,13 +172,13 @@ export default function VendedorProfile({ user, onBack }) {
                 alignItems: 'center',
                 padding: '1rem',
                 marginBottom: '0.5rem',
-                background: theme.surface,
-                border: `1px solid ${theme.borderLight}`,
+                background: darkMode ? '#2a2a2a' : '#f8f9fa',
+                border: `1px solid ${darkMode ? '#444' : '#d1d5db'}`,
                 borderRadius: '8px'
               }}>
                 <div>
                   <div style={{ fontWeight: '600' }}>{venda.numero_venda}</div>
-                  <div style={{ fontSize: '0.9rem', color: theme.textSecondary }}>
+                  <div style={{ fontSize: '0.9rem', color: darkMode ? '#888' : '#666' }}>
                     {new Date(venda.data_venda).toLocaleDateString('pt-BR')} às{' '}
                     {new Date(venda.data_venda).toLocaleTimeString('pt-BR', { 
                       hour: '2-digit', 
@@ -186,7 +186,7 @@ export default function VendedorProfile({ user, onBack }) {
                     })}
                   </div>
                   {venda.cliente_nome && (
-                    <div style={{ fontSize: '0.9rem', color: theme.textSecondary }}>
+                    <div style={{ fontSize: '0.9rem', color: darkMode ? '#888' : '#666' }}>
                       Cliente: {venda.cliente_nome}
                     </div>
                   )}
@@ -195,13 +195,13 @@ export default function VendedorProfile({ user, onBack }) {
                   <div style={{ 
                     fontSize: '1.1rem', 
                     fontWeight: '600',
-                    color: venda.forma_pagamento === 'pendente_caixa' ? theme.warning : theme.success
+                    color: venda.forma_pagamento === 'pendente_caixa' ? '#f59e0b' : '#10b981'
                   }}>
                     R$ {parseFloat(venda.valor_final).toFixed(2)}
                   </div>
                   <div style={{ 
                     fontSize: '0.8rem',
-                    color: venda.forma_pagamento === 'pendente_caixa' ? theme.warning : theme.success
+                    color: venda.forma_pagamento === 'pendente_caixa' ? '#f59e0b' : '#10b981'
                   }}>
                     {venda.forma_pagamento === 'pendente_caixa' ? 'Pendente' : 'Finalizada'}
                   </div>

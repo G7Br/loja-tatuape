@@ -11,8 +11,8 @@ export const renderEstoquePage = (produtos, searchTerm, darkMode, TableContainer
     <div>
       <h3 style={{marginBottom: '1rem', color: darkMode ? '#fff' : '#000'}}>Estoque Disponível</h3>
       {produtosFiltrados.length > 0 ? (
-        <TableContainer darkMode={darkMode}>
-          <TableHeader darkMode={darkMode}>
+        <TableContainer $darkMode={darkMode}>
+          <TableHeader $darkMode={darkMode}>
             <div>PRODUTO</div>
             <div>CÓDIGO</div>
             <div>ESTOQUE</div>
@@ -20,7 +20,7 @@ export const renderEstoquePage = (produtos, searchTerm, darkMode, TableContainer
             <div>STATUS</div>
           </TableHeader>
           {produtosFiltrados.map(produto => (
-            <TableRow key={produto.id} darkMode={darkMode}>
+            <TableRow key={produto.id} $darkMode={darkMode}>
               <div>{produto.nome}</div>
               <div>{produto.codigo || 'N/A'}</div>
               <div style={{fontWeight: '600', color: produto.estoque_atual < 5 ? '#f59e0b' : '#10b981'}}>
@@ -89,8 +89,8 @@ export const renderSaidaValoresPage = (darkMode, caixaAberto, setShowSaidaModal,
         </div>
       )}
       
-      <TableContainer darkMode={darkMode}>
-        <TableHeader darkMode={darkMode}>
+      <TableContainer $darkMode={darkMode}>
+        <TableHeader $darkMode={darkMode}>
           <div>DATA</div>
           <div>VALOR</div>
           <div>OBSERVAÇÃO</div>
@@ -99,7 +99,7 @@ export const renderSaidaValoresPage = (darkMode, caixaAberto, setShowSaidaModal,
         
         {historicoSaidas.length > 0 ? (
           historicoSaidas.map(saida => (
-            <TableRow key={saida.id} darkMode={darkMode}>
+            <TableRow key={saida.id} $darkMode={darkMode}>
               <div>{new Date(saida.created_at).toLocaleDateString('pt-BR')}</div>
               <div style={{color: '#ef4444', fontWeight: '600'}}>-R$ {parseFloat(saida.valor).toFixed(2)}</div>
               <div>{saida.observacao}</div>
@@ -176,15 +176,15 @@ export const renderVendedoresPage = (darkMode, vendedores, clientes, vendedoresT
       
       {vendedoresTab === 'lista' ? (
         vendedoresValidos.length > 0 ? (
-          <TableContainer darkMode={darkMode}>
-            <TableHeader darkMode={darkMode}>
+          <TableContainer $darkMode={darkMode}>
+            <TableHeader $darkMode={darkMode}>
               <div>VENDEDOR</div>
               <div>FUNÇÃO</div>
               <div>STATUS</div>
               <div>AÇÕES</div>
             </TableHeader>
             {vendedoresValidos.map(vendedor => (
-              <TableRow key={vendedor.id} darkMode={darkMode}>
+              <TableRow key={vendedor.id} $darkMode={darkMode}>
                 <div>{vendedor.nome_completo || vendedor.nome}</div>
                 <div>{vendedor.tipo || 'Vendedor'}</div>
                 <div>
@@ -216,7 +216,7 @@ export const renderVendedoresPage = (darkMode, vendedores, clientes, vendedoresT
             border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
             padding: '2rem'
           }}>
-            <h3 style={{marginBottom: '1rem'}}>Cadastrar Cliente</h3>
+            <h3 style={{marginBottom: '1rem', color: darkMode ? '#fff' : '#000'}}>Cadastrar Cliente</h3>
             <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
               <input
                 placeholder="Nome Completo *"
@@ -261,7 +261,7 @@ export const renderVendedoresPage = (darkMode, vendedores, clientes, vendedoresT
           </div>
           
           <div>
-            <h3 style={{marginBottom: '1rem'}}>Clientes ({clientesValidos.length})</h3>
+            <h3 style={{marginBottom: '1rem', color: darkMode ? '#fff' : '#000'}}>Clientes ({clientesValidos.length})</h3>
             {clientesValidos.length > 0 ? (
               <div style={{maxHeight: '400px', overflowY: 'auto'}}>
                 {clientesValidos.map(cliente => (
