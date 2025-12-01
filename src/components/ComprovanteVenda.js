@@ -181,12 +181,7 @@ export default function ComprovanteVenda({ venda, itens = [], onClose, dadosPaga
     return parseFloat(venda.valor_final || 0);
   };
 
-  const calcularTroco = () => {
-    if (venda.forma_pagamento === 'dinheiro' && venda.valor_recebido) {
-      return parseFloat(venda.valor_recebido) - parseFloat(venda.valor_final);
-    }
-    return 0;
-  };
+
 
   const imprimir = () => {
     const printContent = document.querySelector('.comprovante-content');
