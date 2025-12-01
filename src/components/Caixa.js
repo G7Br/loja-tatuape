@@ -717,7 +717,7 @@ Obrigado pela preferência!`;
       
       setVendaParaEditar(venda);
       setItensEdicao(itens || []);
-      setShowEditModal(true);
+      setShowEditModal(true);tShowEditModal(true);
     } catch (error) {
       alert('Erro ao carregar itens da venda: ' + error.message);
     }
