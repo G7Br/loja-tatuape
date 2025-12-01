@@ -581,21 +581,6 @@ export default function Caixa({ user, onLogout }) {
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     }
-  };to === 'dinheiro') acc.dinheiro++;
-          else if (formaPagamento === 'cartao_credito') acc.credito++;
-          else if (formaPagamento === 'cartao_debito') acc.debito++;
-          else if (formaPagamento?.includes('cartao')) acc.credito++;
-          else if (formaPagamento === 'pix') acc.pix++;
-          else if (formaPagamento?.includes('link_pagamento')) acc.link++;
-        }
-        return acc;
-      }, { dinheiro: 0, credito: 0, debito: 0, pix: 0, link: 0, misto: 0 });
-      
-      setVendasDia(contadores);
-
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-    }
   };
 
   const abrirVenda = async (venda) => {
@@ -732,7 +717,7 @@ Obrigado pela preferência!`;
       
       setVendaParaEditar(venda);
       setItensEdicao(itens || []);
-      setShowEditModal(true);
+      setShowEditModal(true);tShowEditModal(true);
     } catch (error) {
       alert('Erro ao carregar itens da venda: ' + error.message);
     }
