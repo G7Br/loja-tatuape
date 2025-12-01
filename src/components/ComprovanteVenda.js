@@ -181,8 +181,6 @@ export default function ComprovanteVenda({ venda, itens = [], onClose, dadosPaga
     return parseFloat(venda.valor_final || 0);
   };
 
-
-
   const imprimir = () => {
     const printContent = document.querySelector('.comprovante-content');
     if (!printContent) {
