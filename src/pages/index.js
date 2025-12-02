@@ -14,12 +14,25 @@ export default function Home() {
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
     if (currentUser) {
+      // Se o usuário é de Mogi, redirecionar para a página correta baseada no cargo
+      if (currentUser.loja === 'mogi') {
+        if (currentUser.cargo === 'vendedor') {
+          window.location.href = '/mogi/vendedor';
+        } else if (currentUser.cargo === 'gerente') {
+          window.location.href = '/mogi/gerente';
+        } else {
+          window.location.href = '/mogi';
+        }
+        return;
+      }
+      // Usuário de Tatuapé
       setUser(currentUser);
     }
     setLoading(false);
   }, []);
 
   const handleLogin = (userData) => {
+    // Se o usuário logado é de Mogi, será redirecionado automaticamente no componente Login
     setUser(userData);
   };
 
@@ -48,8 +61,8 @@ export default function Home() {
     return <Login onLogin={handleLogin} />;
   }
 
-  // Renderizar componente baseado no tipo de usuário
-  switch (user.tipo) {
+  // Renderizar componente baseado no cargo do usuário
+  switch (user.cargo || user.tipo) {
     case 'gerente':
       return <Gerente user={user} onLogout={handleLogout} />;
     case 'vendedor':
@@ -68,7 +81,8 @@ export default function Home() {
           flexDirection: 'column',
           gap: '20px'
         }}>
-          <h1>Tipo de usuário não reconhecido</h1>
+          <h1>Cargo de usuário não reconhecido</h1>
+          <p>Cargo: {user.cargo || user.tipo || 'Não definido'}</p>
           <button
             onClick={handleLogout}
             style={{

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { supabase } from '../utils/supabase';
-import { useTheme } from '../contexts/ThemeContext';
-import { renderEstoquePage, renderSaidaValoresPage, renderVendedoresPage } from './CaixaPages';
-import ComprovanteVenda from './ComprovanteVenda';
-import CaixaController from './CaixaController';
-import SistemaVendas from './SistemaVendas';
-import HistoricoCaixa from './HistoricoCaixa';
-import { getBrasiliaDateOnly, formatBrasiliaDateTime, formatBrasiliaTime, formatCurrency, createBrasiliaTimestamp } from '../utils/dateUtils';
+import { supabase } from '../../utils/supabaseMogi';
+import { useTheme } from '../../contexts/ThemeContext';
+import { renderEstoquePage, renderSaidaValoresPage, renderVendedoresPage } from '../CaixaPages';
+import ComprovanteVendaMogi from './ComprovanteVendaMogi';
+import CaixaControllerMogi from './CaixaControllerMogi';
+import SistemaVendasMogi from './SistemaVendasMogi';
+import HistoricoCaixaMogi from './HistoricoCaixaMogi';
+import { getBrasiliaDateOnly, formatBrasiliaDateTime, formatBrasiliaTime, formatCurrency, createBrasiliaTimestamp } from '../../utils/dateUtils';
 
 // Função auxiliar para formatar moeda
 const formatMoney = (value) => {
@@ -224,16 +224,6 @@ const TableRow = styled.div`
   }
 `;
 
-const CaixaStatus = styled.div`
-  background: ${props => props.aberto ? '#10b981' : '#ef4444'};
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 1rem;
-`;
-
 const RightSidebar = styled.div`
   width: 200px;
   padding: 2rem 1rem;
@@ -278,7 +268,7 @@ const PaymentCounter = styled.div`
   font-weight: 600;
 `;
 
-export default function Caixa({ user, onLogout }) {
+export default function CaixaMogi({ user, onLogout }) {
   const { darkMode, toggleTheme } = useTheme();
   const [activeMenu, setActiveMenu] = useState('vendas');
   const [searchTerm, setSearchTerm] = useState('');
@@ -428,7 +418,6 @@ export default function Caixa({ user, onLogout }) {
     };
   }, []);
 
-  // Limpar busca ao mudar de página
   useEffect(() => {
     setSearchTerm('');
   }, [activeMenu]);
@@ -437,33 +426,32 @@ export default function Caixa({ user, onLogout }) {
     try {
       const hoje = getBrasiliaDateOnly();
       const { data, error } = await supabase
-        .from('fechamentos_caixa_tatuape')
+        .from('fechamentos_caixa_mogi')
         .select('*')
         .eq('usuario_id', user.id)
         .eq('data_fechamento', hoje)
         .eq('status', 'aberto')
         .maybeSingle();
       
-      console.log('Verificando caixa aberto:', { data, error, hoje, userId: user.id });
+      console.log('Verificando caixa aberto Mogi:', { data, error, hoje, userId: user.id });
       
       if (data && data.status === 'aberto') {
         setCaixaAberto(true);
-        console.log('Caixa confirmado como aberto');
+        console.log('Caixa Mogi confirmado como aberto');
       } else {
         setCaixaAberto(false);
-        console.log('Caixa confirmado como fechado');
+        console.log('Caixa Mogi confirmado como fechado');
       }
     } catch (error) {
-      console.error('Erro ao verificar caixa aberto:', error);
+      console.error('Erro ao verificar caixa aberto Mogi:', error);
       setCaixaAberto(false);
     }
   };
 
   const carregarHistoricoRegistros = async () => {
     try {
-      const loja = user.loja || 'tatuape';
       const { data } = await supabase
-        .from(`fechamentos_caixa_${loja}`)
+        .from('fechamentos_caixa_mogi')
         .select('*')
         .eq('usuario_id', user.id)
         .order('data_fechamento', { ascending: false })
@@ -471,22 +459,21 @@ export default function Caixa({ user, onLogout }) {
       
       setHistoricoRegistros(data || []);
     } catch (error) {
-      console.error('Erro ao carregar histórico:', error);
+      console.error('Erro ao carregar histórico Mogi:', error);
     }
   };
 
   const carregarHistoricoSaidas = async () => {
     try {
-      const loja = user.loja || 'tatuape';
       const { data } = await supabase
-        .from(`saidas_caixa_${loja}`)
+        .from('saidas_caixa_mogi')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(20);
       
       setHistoricoSaidas(data || []);
     } catch (error) {
-      console.error('Erro ao carregar histórico de saídas:', error);
+      console.error('Erro ao carregar histórico de saídas Mogi:', error);
     }
   };
 
@@ -502,9 +489,8 @@ export default function Caixa({ user, onLogout }) {
     }
     
     try {
-      const loja = user.loja || 'tatuape';
       const { error } = await supabase
-        .from(`saidas_caixa_${loja}`)
+        .from('saidas_caixa_mogi')
         .insert({
           usuario_id: user.id,
           valor: valorSaida,
@@ -529,13 +515,12 @@ export default function Caixa({ user, onLogout }) {
     try {
       const hoje = getBrasiliaDateOnly();
       
-      // Carregar dados
       const [vendasRes, produtosRes, vendedoresRes, clientesRes, historicoRes] = await Promise.all([
-        supabase.from('vendas_tatuape').select('*').eq('forma_pagamento', 'pendente_caixa').neq('status', 'cancelada').order('data_venda', { ascending: false }),
-        supabase.from('produtos_tatuape').select('*').eq('ativo', true),
-        supabase.from('usuarios_tatuape').select('*').eq('tipo', 'vendedor'),
-        supabase.from('vendas_tatuape').select('cliente_nome, cliente_telefone, data_venda').neq('forma_pagamento', 'pendente_caixa').order('data_venda', { ascending: false }),
-        supabase.from('vendas_tatuape').select('*').neq('forma_pagamento', 'pendente_caixa').order('data_venda', { ascending: false }).limit(100)
+        supabase.from('vendas_mogi').select('*').eq('forma_pagamento', 'pendente_caixa').neq('status', 'cancelada').order('data_venda', { ascending: false }),
+        supabase.from('produtos_mogi').select('*').eq('ativo', true),
+        supabase.from('usuarios_mogi').select('*').eq('tipo', 'vendedor'),
+        supabase.from('vendas_mogi').select('cliente_nome, cliente_telefone, data_venda').neq('forma_pagamento', 'pendente_caixa').order('data_venda', { ascending: false }),
+        supabase.from('vendas_mogi').select('*').neq('forma_pagamento', 'pendente_caixa').order('data_venda', { ascending: false }).limit(100)
       ]);
 
       setVendas(vendasRes.data || []);
@@ -544,9 +529,8 @@ export default function Caixa({ user, onLogout }) {
       setClientes(clientesRes.data || []);
       setHistoricoVendas(historicoRes.data || []);
       
-      // Contar vendas por tipo de pagamento
       const { data: vendasDiaData } = await supabase
-        .from('vendas_tatuape')
+        .from('vendas_mogi')
         .select('forma_pagamento')
         .neq('forma_pagamento', 'pendente_caixa')
         .gte('data_venda', hoje);
@@ -554,7 +538,6 @@ export default function Caixa({ user, onLogout }) {
       const contadores = (vendasDiaData || []).reduce((acc, venda) => {
         const formaPagamento = venda.forma_pagamento;
         
-        // Verificar se é pagamento misto (contém |)
         if (formaPagamento?.includes('|')) {
           acc.misto++;
           const formas = formaPagamento.split('|');
@@ -567,7 +550,6 @@ export default function Caixa({ user, onLogout }) {
             else if (tipo === 'link_pagamento') acc.link++;
           });
         } else {
-          // Pagamento simples
           if (formaPagamento === 'dinheiro') acc.dinheiro++;
           else if (formaPagamento === 'cartao_credito') acc.credito++;
           else if (formaPagamento === 'cartao_debito') acc.debito++;
@@ -581,7 +563,7 @@ export default function Caixa({ user, onLogout }) {
       setVendasDia(contadores);
 
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('Erro ao carregar dados Mogi:', error);
     }
   };
 
@@ -590,13 +572,13 @@ export default function Caixa({ user, onLogout }) {
     
     try {
       const { data: itens } = await supabase
-        .from('itens_venda_tatuape')
+        .from('itens_venda_mogi')
         .select('*')
         .eq('venda_id', venda.id);
       
       setItensVenda(itens || []);
     } catch (error) {
-      console.error('Erro ao carregar itens:', error);
+      console.error('Erro ao carregar itens Mogi:', error);
       setItensVenda([]);
     }
     
@@ -628,46 +610,45 @@ export default function Caixa({ user, onLogout }) {
       };
       
       // Salvar comprovante individual
-      localStorage.setItem(`comprovante_${venda.id}`, JSON.stringify(comprovanteData));
+      localStorage.setItem(`comprovante_mogi_${venda.id}`, JSON.stringify(comprovanteData));
       
       // Manter lista de comprovantes salvos
-      const comprovantesSalvos = JSON.parse(localStorage.getItem('comprovantes_salvos') || '[]');
+      const comprovantesSalvos = JSON.parse(localStorage.getItem('comprovantes_salvos_mogi') || '[]');
       const novaLista = comprovantesSalvos.filter(c => c.venda_id !== venda.id);
       novaLista.unshift({ venda_id: venda.id, numero_venda: venda.numero_venda, cliente_nome: venda.cliente_nome, data_venda: venda.data_venda });
       
       // Manter apenas os últimos 50 comprovantes
       if (novaLista.length > 50) {
         const removidos = novaLista.splice(50);
-        removidos.forEach(r => localStorage.removeItem(`comprovante_${r.venda_id}`));
+        removidos.forEach(r => localStorage.removeItem(`comprovante_mogi_${r.venda_id}`));
       }
       
-      localStorage.setItem('comprovantes_salvos', JSON.stringify(novaLista));
+      localStorage.setItem('comprovantes_salvos_mogi', JSON.stringify(novaLista));
       
-      console.log(`✅ Comprovante da venda ${venda.numero_venda} salvo com sucesso!`);
+      console.log(`✅ Comprovante da venda Mogi ${venda.numero_venda} salvo com sucesso!`);
     } catch (error) {
-      console.error('Erro ao salvar comprovante:', error);
+      console.error('Erro ao salvar comprovante Mogi:', error);
     }
   };
 
   const carregarComprovanteLocalStorage = (vendaId) => {
     try {
-      const comprovanteData = localStorage.getItem(`comprovante_${vendaId}`);
+      const comprovanteData = localStorage.getItem(`comprovante_mogi_${vendaId}`);
       if (comprovanteData) {
         const dados = JSON.parse(comprovanteData);
         return dados;
       }
       return null;
     } catch (error) {
-      console.error('Erro ao carregar comprovante:', error);
+      console.error('Erro ao carregar comprovante Mogi:', error);
       return null;
     }
   };
 
   const gerarComprovante = async () => {
     try {
-      const loja = user.loja || 'tatuape';
       const { data: itensComprovante } = await supabase
-        .from(`itens_venda_${loja}`)
+        .from('itens_venda_mogi')
         .select('*')
         .eq('venda_id', vendaFinalizada.id);
       
@@ -679,7 +660,7 @@ export default function Caixa({ user, onLogout }) {
       
       setShowComprovante(true);
     } catch (error) {
-      console.error('Erro ao carregar itens:', error);
+      console.error('Erro ao carregar itens Mogi:', error);
       setShowComprovante(true);
     }
   };
@@ -695,7 +676,7 @@ export default function Caixa({ user, onLogout }) {
     }
     
     const telefone = vendaFinalizada.cliente_telefone.replace(/\D/g, '');
-    const mensagem = `Olá ${vendaFinalizada.cliente_nome}! Sua compra na VH Alfaiataria foi finalizada.
+    const mensagem = `Olá ${vendaFinalizada.cliente_nome}! Sua compra na VH Alfaiataria Mogi foi finalizada.
 
 Venda: ${vendaFinalizada.numero_venda}
 Total: R$ ${parseFloat(vendaFinalizada.valor_final).toFixed(2)}
@@ -714,13 +695,13 @@ Obrigado pela preferência!`;
   const editarVenda = async (venda) => {
     try {
       const { data: itens } = await supabase
-        .from('itens_venda_tatuape')
+        .from('itens_venda_mogi')
         .select('*')
         .eq('venda_id', venda.id);
       
       setVendaParaEditar(venda);
       setItensEdicao(itens || []);
-      setShowEditModal(true);tShowEditModal(true);
+      setShowEditModal(true);
     } catch (error) {
       alert('Erro ao carregar itens da venda: ' + error.message);
     }
@@ -763,7 +744,7 @@ Obrigado pela preferência!`;
       
       // Atualizar venda
       await supabase
-        .from('vendas_tatuape')
+        .from('vendas_mogi')
         .update({ 
           valor_total: novoTotal,
           valor_final: novoTotal 
@@ -772,7 +753,7 @@ Obrigado pela preferência!`;
       
       // Deletar itens antigos
       await supabase
-        .from('itens_venda_tatuape')
+        .from('itens_venda_mogi')
         .delete()
         .eq('venda_id', vendaParaEditar.id);
       
@@ -788,7 +769,7 @@ Obrigado pela preferência!`;
       }));
       
       await supabase
-        .from('itens_venda_tatuape')
+        .from('itens_venda_mogi')
         .insert(novosItens);
       
       alert('✅ Venda editada com sucesso!');
@@ -817,7 +798,7 @@ Obrigado pela preferência!`;
         carregarDados();
       }, 2000);
     } catch (error) {
-      console.error('Erro ao cancelar venda:', error);
+      console.error('Erro ao cancelar venda Mogi:', error);
       setCancelLogs(prev => [...prev, `❌ Erro: ${error.message}`]);
       setTimeout(() => setShowCancelModal(false), 3000);
     }
@@ -829,7 +810,7 @@ Obrigado pela preferência!`;
       
       // Buscar itens da venda para repor estoque
       const { data: itens } = await supabase
-        .from('itens_venda_tatuape')
+        .from('itens_venda_mogi')
         .select('*')
         .eq('venda_id', venda.id);
 
@@ -838,7 +819,7 @@ Obrigado pela preferência!`;
       // Repor estoque dos produtos
       for (const item of itens || []) {
         const { data: produto } = await supabase
-          .from('produtos_tatuape')
+          .from('produtos_mogi')
           .select('estoque_atual')
           .eq('id', item.produto_id)
           .single();
@@ -846,7 +827,7 @@ Obrigado pela preferência!`;
         if (produto) {
           const novoEstoque = produto.estoque_atual + item.quantidade;
           await supabase
-            .from('produtos_tatuape')
+            .from('produtos_mogi')
             .update({ 
               estoque_atual: novoEstoque 
             })
@@ -855,7 +836,7 @@ Obrigado pela preferência!`;
 
         // Registrar movimentação de estoque
         await supabase
-          .from('movimentacoes_estoque_tatuape')
+          .from('movimentacoes_estoque_mogi')
           .insert({
             produto_id: item.produto_id,
             tipo_movimentacao: 'cancelamento',
@@ -868,7 +849,7 @@ Obrigado pela preferência!`;
       
       // Marcar venda como cancelada
       await supabase
-        .from('vendas_tatuape')
+        .from('vendas_mogi')
         .update({ status: 'cancelada' })
         .eq('id', venda.id);
 
@@ -942,11 +923,10 @@ Obrigado pela preferência!`;
       
       // Atualizar a venda
       const { error: vendaError } = await supabase
-        .from('vendas_tatuape')
+        .from('vendas_mogi')
         .update({ 
           forma_pagamento: formaPagamentoFinal,
-          valor_final: novoTotal,
-          valor_recebido: valorRecebidoFinal
+          valor_final: novoTotal
         })
         .eq('id', vendaSelecionada.id);
       
@@ -957,7 +937,7 @@ Obrigado pela preferência!`;
         const formasAtivas = formasPagamento.filter(f => f.ativo && f.valor > 0);
         for (const forma of formasAtivas) {
           await supabase
-            .from('caixa_tatuape')
+            .from('caixa_mogi')
             .insert([{
               tipo: 'entrada',
               valor: forma.valor,
@@ -971,7 +951,7 @@ Obrigado pela preferência!`;
         }
       } else {
         const { error: caixaError } = await supabase
-          .from('caixa_tatuape')
+          .from('caixa_mogi')
           .insert([{
             tipo: 'entrada',
             valor: novoTotal,
@@ -1015,8 +995,7 @@ Obrigado pela preferência!`;
         valor_final: novoTotal,
         forma_pagamento: formaPagamentoFinal,
         valor_pago_cliente: valorRecebidoFinal,
-        troco_cliente: trocoFinal,
-        valor_recebido: valorRecebidoFinal
+        troco_cliente: trocoFinal
       };
       
       // Salvar comprovante automaticamente
@@ -1044,10 +1023,9 @@ Obrigado pela preferência!`;
       setShowLinkPagamentoModal(false);
       
       await carregarDados();
-
       
     } catch (error) {
-      console.error('❌ ERRO:', error);
+      console.error('❌ ERRO Mogi:', error);
       alert('❌ Erro ao processar pagamento: ' + error.message);
     }
   };
@@ -1276,6 +1254,81 @@ Obrigado pela preferência!`;
           </div>
         );
       
+      case 'nova-venda':
+        if (!caixaAberto) {
+          return (
+            <div style={{padding: '4rem', textAlign: 'center'}}>
+              <div style={{
+                background: darkMode ? '#1a1a1a' : '#ffffff',
+                border: '2px solid #ef4444',
+                borderRadius: '1rem',
+                padding: '3rem',
+                maxWidth: '400px',
+                margin: '0 auto'
+              }}>
+                <div style={{fontSize: '4rem', marginBottom: '1rem'}}>🔒</div>
+                <h2 style={{color: '#ef4444', marginBottom: '1rem'}}>Caixa Fechado</h2>
+                <p style={{color: darkMode ? '#888' : '#666', marginBottom: '2rem'}}>
+                  Para criar vendas é necessário abrir o caixa primeiro.
+                </p>
+                <button
+                  onClick={() => setActiveMenu('caixa')}
+                  style={{
+                    padding: '1rem 2rem',
+                    background: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '1rem'
+                  }}
+                >
+                  Ir para Controle de Caixa
+                </button>
+              </div>
+            </div>
+          );
+        }
+        
+        return (
+          <div style={{ textAlign: 'center', padding: '4rem' }}>
+            <div style={{
+              background: darkMode ? '#1a1a1a' : '#ffffff',
+              border: `2px solid #10b981`,
+              borderRadius: '1rem',
+              padding: '3rem',
+              maxWidth: '500px',
+              margin: '0 auto'
+            }}>
+              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🛍️</div>
+              <h2 style={{ color: '#10b981', marginBottom: '1rem' }}>Sistema de Vendas - Mogi</h2>
+              <p style={{ color: darkMode ? '#888' : '#666', marginBottom: '2rem' }}>
+                Crie vendas completas: selecione vendedor, adicione produtos, cadastre cliente e finalize o pagamento.
+              </p>
+              <button
+                onClick={() => setShowSistemaVendas(true)}
+                style={{
+                  padding: '1rem 2rem',
+                  background: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '1.1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  margin: '0 auto'
+                }}
+              >
+                🚀 Iniciar Nova Venda
+              </button>
+            </div>
+          </div>
+        );
+      
       case 'estoque':
         return renderEstoquePage(filtrarProdutos(produtos), searchTerm, darkMode, TableContainer, TableHeader, TableRow);
       
@@ -1286,7 +1339,7 @@ Obrigado pela preferência!`;
         const salvarCliente = async () => {
           try {
             // Inserir ou atualizar cliente
-            await supabase.from('clientes_tatuape').upsert({
+            await supabase.from('clientes_mogi').upsert({
               nome_completo: formCliente.nome_completo,
               telefone: formCliente.telefone,
               cpf: formCliente.cpf,
@@ -1319,7 +1372,7 @@ Obrigado pela preferência!`;
           const comprovanteLocal = carregarComprovanteLocalStorage(venda.id);
           
           if (comprovanteLocal) {
-            console.log('💾 Carregando comprovante do cache local...');
+            console.log('💾 Carregando comprovante do cache local Mogi...');
             setVendaFinalizada(comprovanteLocal.venda);
             setItensVenda(comprovanteLocal.itens);
             setShowComprovante(true);
@@ -1328,9 +1381,9 @@ Obrigado pela preferência!`;
           
           // Se não encontrou no localStorage, buscar no banco
           try {
-            console.log('💾 Buscando dados no banco de dados...');
+            console.log('💾 Buscando dados no banco de dados Mogi...');
             const { data: itensHistorico } = await supabase
-              .from('itens_venda_tatuape')
+              .from('itens_venda_mogi')
               .select('*')
               .eq('venda_id', venda.id);
             
@@ -1343,7 +1396,7 @@ Obrigado pela preferência!`;
             setItensVenda(itensParaUsar);
             setShowComprovante(true);
           } catch (error) {
-            console.error('Erro ao carregar itens:', error);
+            console.error('Erro ao carregar itens Mogi:', error);
             
             // Mesmo com erro, salvar o que temos
             salvarComprovanteLocalStorage(venda, []);
@@ -1357,7 +1410,7 @@ Obrigado pela preferência!`;
         const historicoFiltrado = filtrarHistorico(historicoVendas);
         return (
           <div>
-            <h3 style={{marginBottom: '1rem', color: darkMode ? '#fff' : '#000'}}>Histórico de Vendas</h3>
+            <h3 style={{marginBottom: '1rem', color: darkMode ? '#fff' : '#000'}}>Histórico de Vendas - Mogi</h3>
             {historicoFiltrado.length > 0 ? (
               <TableContainer $darkMode={darkMode}>
                 <TableHeader $darkMode={darkMode}>
@@ -1428,86 +1481,11 @@ Obrigado pela preferência!`;
           </div>
         );
       
-      case 'nova-venda':
-        if (!caixaAberto) {
-          return (
-            <div style={{padding: '4rem', textAlign: 'center'}}>
-              <div style={{
-                background: darkMode ? '#1a1a1a' : '#ffffff',
-                border: '2px solid #ef4444',
-                borderRadius: '1rem',
-                padding: '3rem',
-                maxWidth: '400px',
-                margin: '0 auto'
-              }}>
-                <div style={{fontSize: '4rem', marginBottom: '1rem'}}>🔒</div>
-                <h2 style={{color: '#ef4444', marginBottom: '1rem'}}>Caixa Fechado</h2>
-                <p style={{color: darkMode ? '#888' : '#666', marginBottom: '2rem'}}>
-                  Para criar vendas é necessário abrir o caixa primeiro.
-                </p>
-                <button
-                  onClick={() => setActiveMenu('caixa')}
-                  style={{
-                    padding: '1rem 2rem',
-                    background: '#10b981',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '0.5rem',
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    fontSize: '1rem'
-                  }}
-                >
-                  Ir para Controle de Caixa
-                </button>
-              </div>
-            </div>
-          );
-        }
-        
-        return (
-          <div style={{ textAlign: 'center', padding: '4rem' }}>
-            <div style={{
-              background: darkMode ? '#1a1a1a' : '#ffffff',
-              border: `2px solid #10b981`,
-              borderRadius: '1rem',
-              padding: '3rem',
-              maxWidth: '500px',
-              margin: '0 auto'
-            }}>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🛍️</div>
-              <h2 style={{ color: '#10b981', marginBottom: '1rem' }}>Sistema de Vendas</h2>
-              <p style={{ color: darkMode ? '#888' : '#666', marginBottom: '2rem' }}>
-                Crie vendas completas: selecione vendedor, adicione produtos, cadastre cliente e finalize o pagamento.
-              </p>
-              <button
-                onClick={() => setShowSistemaVendas(true)}
-                style={{
-                  padding: '1rem 2rem',
-                  background: '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  cursor: 'pointer',
-                  fontWeight: '600',
-                  fontSize: '1.1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  margin: '0 auto'
-                }}
-              >
-                🚀 Iniciar Nova Venda
-              </button>
-            </div>
-          </div>
-        );
-      
       case 'caixa':
-        return <CaixaController user={user} darkMode={darkMode} />;
+        return <CaixaControllerMogi user={user} darkMode={darkMode} />;
       
       case 'historico-caixa':
-        return <HistoricoCaixa user={user} darkMode={darkMode} />;
+        return <HistoricoCaixaMogi user={user} darkMode={darkMode} />;
       
       case 'customes':
       case 'ternos':
@@ -1544,7 +1522,7 @@ Obrigado pela preferência!`;
           <div>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem'}}>
               <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0, textTransform: 'uppercase'}}>
-                {categoria === 'acessorios' ? 'ACESSÓRIOS' : categoria}
+                {categoria === 'acessorios' ? 'ACESSÓRIOS' : categoria} - MOGI
               </h2>
               <div style={{fontSize: '0.9rem', color: darkMode ? '#888' : '#666'}}>
                 {produtosCategoria.length} produtos {searchTerm ? 'encontrados' : 'disponíveis'}
@@ -1746,7 +1724,7 @@ Obrigado pela preferência!`;
             fontWeight: '700',
             color: darkMode ? '#ffffff' : '#000000'
           }}>
-            CAIXA - {user.loja === 'mogi' ? 'MOGI DAS CRUZES' : 'TATUAPÉ'}
+            CAIXA - MOGI DAS CRUZES
           </div>
         </div>
         <div style={{
@@ -1891,7 +1869,7 @@ Obrigado pela preferência!`;
             border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
           }}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
-              <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0}}>🛍️ Finalizar Compra</h2>
+              <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0}}>🛍️ Finalizar Compra - Mogi</h2>
               <button 
                 onClick={() => setShowModal(false)}
                 style={{
@@ -2494,7 +2472,7 @@ Obrigado pela preferência!`;
             border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
           }}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
-              <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0}}>Registrar Saída de Valores</h2>
+              <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0}}>Registrar Saída de Valores - Mogi</h2>
               <button 
                 onClick={() => {
                   setShowSaidaModal(false);
@@ -2621,7 +2599,7 @@ Obrigado pela preferência!`;
             border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
           }}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
-              <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0}}>🎉 Venda Finalizada!</h2>
+              <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0}}>🎉 Venda Finalizada - Mogi!</h2>
               <button 
                 onClick={() => {
                   setShowPosVendaModal(false);
@@ -2674,7 +2652,7 @@ Obrigado pela preferência!`;
                   <span style={{fontSize: '1.5rem'}}>🧧</span>
                   <div>
                     <div>Gerar Comprovante de Pagamento</div>
-                    <div style={{fontSize: '0.8rem', color: '#888'}}>Comprovante da venda (em desenvolvimento)</div>
+                    <div style={{fontSize: '0.8rem', color: '#888'}}>Comprovante da venda Mogi</div>
                   </div>
                 </button>
                 
@@ -2764,31 +2742,211 @@ Obrigado pela preferência!`;
         </div>
       )}
       
-      {/* Comprovante de Venda */}
-      {showComprovante && vendaFinalizada && (
-        <ComprovanteVenda 
-          venda={vendaFinalizada}
-          itens={itensVenda}
-          onClose={() => setShowComprovante(false)}
-          dadosPagamento={{
-            valorPago: vendaFinalizada.valor_pago_cliente,
-            troco: vendaFinalizada.troco_cliente
-          }}
-        />
+      {/* Modal de Link de Pagamento */}
+      {showLinkPagamentoModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: darkMode ? '#1a1a1a' : '#ffffff',
+            borderRadius: '1rem',
+            padding: '2rem',
+            maxWidth: '500px',
+            width: '90%',
+            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
+          }}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
+              <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                🔗 Link de Pagamento - Mogi
+              </h2>
+              <button 
+                onClick={() => {
+                  setShowLinkPagamentoModal(false);
+                  setTaxaLinkPagamento(0);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: darkMode ? '#fff' : '#000'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div style={{
+              background: darkMode ? '#2a2a2a' : '#f0f9ff',
+              border: '2px solid #6366f1',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem'}}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  background: '#6366f1',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.2rem'
+                }}>
+                  🔗
+                </div>
+                <div>
+                  <h4 style={{margin: 0, color: darkMode ? '#fff' : '#000', fontSize: '1.1rem'}}>Configurar Link de Pagamento</h4>
+                  <p style={{margin: 0, color: '#888', fontSize: '0.9rem'}}>Defina a taxa adicional para o link de pagamento</p>
+                </div>
+              </div>
+              
+              <div style={{marginBottom: '1rem'}}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '0.75rem',
+                  padding: '0.5rem 0'
+                }}>
+                  <span style={{color: darkMode ? '#fff' : '#000', fontSize: '1rem'}}>Valor da Venda:</span>
+                  <span style={{color: darkMode ? '#fff' : '#000', fontSize: '1rem', fontWeight: '600'}}>
+                    {formatMoney(calcularTotal())}
+                  </span>
+                </div>
+                
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '0.75rem',
+                  padding: '0.5rem 0'
+                }}>
+                  <span style={{color: darkMode ? '#fff' : '#000', fontSize: '1rem'}}>Taxa Adicional (%):</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={taxaLinkPagamento}
+                    onChange={(e) => setTaxaLinkPagamento(parseFloat(e.target.value) || 0)}
+                    style={{
+                      width: '100px',
+                      padding: '0.75rem',
+                      border: `2px solid ${darkMode ? '#333' : '#e5e7eb'}`,
+                      borderRadius: '0.5rem',
+                      background: darkMode ? '#333' : '#fff',
+                      color: darkMode ? '#fff' : '#000',
+                      textAlign: 'right',
+                      fontSize: '1rem',
+                      fontWeight: '600'
+                    }}
+                    placeholder="0,0"
+                  />
+                </div>
+                
+                {taxaLinkPagamento > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '0.75rem',
+                    padding: '0.5rem 0',
+                    borderTop: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
+                    paddingTop: '0.75rem'
+                  }}>
+                    <span style={{color: darkMode ? '#fff' : '#000', fontSize: '1rem'}}>Valor da Taxa:</span>
+                    <span style={{color: '#f59e0b', fontSize: '1rem', fontWeight: '600'}}>
+                      + {formatMoney(calcularTotal() * (taxaLinkPagamento / 100))}
+                    </span>
+                  </div>
+                )}
+                
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '1.2rem',
+                  fontWeight: '700',
+                  borderTop: `2px solid ${darkMode ? '#333' : '#e5e7eb'}`,
+                  paddingTop: '1rem',
+                  marginTop: '1rem'
+                }}>
+                  <span style={{color: darkMode ? '#fff' : '#000'}}>TOTAL COM TAXA:</span>
+                  <span style={{color: '#6366f1', fontSize: '1.3rem'}}>
+                    {formatMoney(calcularTotal() * (1 + taxaLinkPagamento / 100))}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
+              <button
+                onClick={() => {
+                  setShowLinkPagamentoModal(false);
+                  setTaxaLinkPagamento(0);
+                }}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: darkMode ? '#333' : '#f3f4f6',
+                  color: darkMode ? '#fff' : '#000',
+                  border: `1px solid ${darkMode ? '#555' : '#d1d5db'}`,
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  const valorComTaxa = calcularTotal() * (1 + taxaLinkPagamento / 100);
+                  setMetodoPagamento('link_pagamento');
+                  setValorPago(valorComTaxa);
+                  setShowLinkPagamentoModal(false);
+                }}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: '#6366f1',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: '700',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                🔗 GERAR LINK
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-      
-      {/* Sistema de Vendas */}
+
       {showSistemaVendas && (
-        <SistemaVendas 
+        <SistemaVendasMogi 
           user={user}
           darkMode={darkMode}
           onClose={() => {
             setShowSistemaVendas(false);
-            carregarDados(); // Recarregar dados após criar venda
+            carregarDados();
           }}
         />
       )}
-      
+
       {/* Modal de Edição de Venda */}
       {showEditModal && vendaParaEditar && (
         <div style={{
@@ -2814,7 +2972,7 @@ Obrigado pela preferência!`;
             border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
           }}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
-              <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0}}>Editar Venda</h2>
+              <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0}}>Editar Venda - Mogi</h2>
               <button 
                 onClick={() => {
                   setShowEditModal(false);
@@ -3121,7 +3279,7 @@ Obrigado pela preferência!`;
               </div>
               <div>
                 <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0}}>
-                  Cancelar Venda
+                  Cancelar Venda - Mogi
                 </h2>
                 <p style={{color: '#888', margin: 0, fontSize: '0.9rem'}}>
                   Esta ação não pode ser desfeita
@@ -3240,7 +3398,7 @@ Obrigado pela preferência!`;
             border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
           }}>
             <h2 style={{color: darkMode ? '#fff' : '#000', marginBottom: '1rem'}}>
-              ⚠️ Cancelar {vendasSelecionadas.length} Vendas
+              ⚠️ Cancelar {vendasSelecionadas.length} Vendas - Mogi
             </h2>
             
             <p style={{color: '#888', marginBottom: '1.5rem'}}>
@@ -3301,200 +3459,6 @@ Obrigado pela preferência!`;
         </div>
       )}
       
-      {/* Modal de Link de Pagamento */}
-      {showLinkPagamentoModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: darkMode ? '#1a1a1a' : '#ffffff',
-            borderRadius: '1rem',
-            padding: '2rem',
-            maxWidth: '500px',
-            width: '90%',
-            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
-          }}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
-              <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                🔗 Link de Pagamento
-              </h2>
-              <button 
-                onClick={() => {
-                  setShowLinkPagamentoModal(false);
-                  setTaxaLinkPagamento(0);
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.5rem',
-                  cursor: 'pointer',
-                  color: darkMode ? '#fff' : '#000'
-                }}
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div style={{
-              background: darkMode ? '#2a2a2a' : '#f0f9ff',
-              border: '2px solid #6366f1',
-              borderRadius: '0.75rem',
-              padding: '1.5rem',
-              marginBottom: '1.5rem'
-            }}>
-              <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem'}}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  background: '#6366f1',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.2rem'
-                }}>
-                  🔗
-                </div>
-                <div>
-                  <h4 style={{margin: 0, color: darkMode ? '#fff' : '#000', fontSize: '1.1rem'}}>Configurar Link de Pagamento</h4>
-                  <p style={{margin: 0, color: '#888', fontSize: '0.9rem'}}>Defina a taxa adicional para o link de pagamento</p>
-                </div>
-              </div>
-              
-              <div style={{marginBottom: '1rem'}}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '0.75rem',
-                  padding: '0.5rem 0'
-                }}>
-                  <span style={{color: darkMode ? '#fff' : '#000', fontSize: '1rem'}}>Valor da Venda:</span>
-                  <span style={{color: darkMode ? '#fff' : '#000', fontSize: '1rem', fontWeight: '600'}}>
-                    {formatMoney(calcularTotal())}
-                  </span>
-                </div>
-                
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '0.75rem',
-                  padding: '0.5rem 0'
-                }}>
-                  <span style={{color: darkMode ? '#fff' : '#000', fontSize: '1rem'}}>Taxa Adicional (%):</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={taxaLinkPagamento}
-                    onChange={(e) => setTaxaLinkPagamento(parseFloat(e.target.value) || 0)}
-                    style={{
-                      width: '100px',
-                      padding: '0.75rem',
-                      border: `2px solid ${darkMode ? '#333' : '#e5e7eb'}`,
-                      borderRadius: '0.5rem',
-                      background: darkMode ? '#333' : '#fff',
-                      color: darkMode ? '#fff' : '#000',
-                      textAlign: 'right',
-                      fontSize: '1rem',
-                      fontWeight: '600'
-                    }}
-                    placeholder="0,0"
-                  />
-                </div>
-                
-                {taxaLinkPagamento > 0 && (
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '0.75rem',
-                    padding: '0.5rem 0',
-                    borderTop: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
-                    paddingTop: '0.75rem'
-                  }}>
-                    <span style={{color: darkMode ? '#fff' : '#000', fontSize: '1rem'}}>Valor da Taxa:</span>
-                    <span style={{color: '#f59e0b', fontSize: '1rem', fontWeight: '600'}}>
-                      + {formatMoney(calcularTotal() * (taxaLinkPagamento / 100))}
-                    </span>
-                  </div>
-                )}
-                
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: '1.2rem',
-                  fontWeight: '700',
-                  borderTop: `2px solid ${darkMode ? '#333' : '#e5e7eb'}`,
-                  paddingTop: '1rem',
-                  marginTop: '1rem'
-                }}>
-                  <span style={{color: darkMode ? '#fff' : '#000'}}>TOTAL COM TAXA:</span>
-                  <span style={{color: '#6366f1', fontSize: '1.3rem'}}>
-                    {formatMoney(calcularTotal() * (1 + taxaLinkPagamento / 100))}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
-              <button
-                onClick={() => {
-                  setShowLinkPagamentoModal(false);
-                  setTaxaLinkPagamento(0);
-                }}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  background: darkMode ? '#333' : '#f3f4f6',
-                  color: darkMode ? '#fff' : '#000',
-                  border: `1px solid ${darkMode ? '#555' : '#d1d5db'}`,
-                  borderRadius: '0.5rem',
-                  cursor: 'pointer',
-                  fontWeight: '600'
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  const valorComTaxa = calcularTotal() * (1 + taxaLinkPagamento / 100);
-                  setMetodoPagamento('link_pagamento');
-                  setValorPago(valorComTaxa);
-                  setShowLinkPagamentoModal(false);
-                }}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  background: '#6366f1',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  cursor: 'pointer',
-                  fontWeight: '700',
-                  fontSize: '1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}
-              >
-                🔗 GERAR LINK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      
       {/* Modal de Cancelamento com Logs */}
       {showCancelModal && (
         <div style={{
@@ -3543,7 +3507,7 @@ Obrigado pela preferência!`;
               </div>
               <div>
                 <h2 style={{color: darkMode ? '#fff' : '#000', margin: 0, fontSize: '1.3rem'}}>
-                  Cancelando Venda
+                  Cancelando Venda - Mogi
                 </h2>
                 <p style={{color: '#888', margin: 0, fontSize: '0.9rem'}}>
                   Processando cancelamento e repondo estoque...
@@ -3588,6 +3552,18 @@ Obrigado pela preferência!`;
             </div>
           </div>
         </div>
+      )}
+
+      {showComprovante && vendaFinalizada && (
+        <ComprovanteVendaMogi 
+          venda={vendaFinalizada}
+          itens={itensVenda}
+          onClose={() => setShowComprovante(false)}
+          dadosPagamento={{
+            valorPago: vendaFinalizada.valor_pago_cliente,
+            troco: vendaFinalizada.troco_cliente
+          }}
+        />
       )}
     </Container>
   );

@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { supabase } from '../utils/supabase';
-import { getBrasiliaDateOnly, getBrasiliaDateISO, formatCurrency, createBrasiliaTimestamp } from '../utils/dateUtils';
+import { supabase, queryWithStoreMogi } from '../../utils/supabaseMogi';
+import { getBrasiliaDateOnly, getBrasiliaDateISO, formatCurrency, createBrasiliaTimestamp } from '../../utils/dateUtils';
 
 const Container = styled.div`
   padding: 2rem;
-  background: ${props => props.$darkMode ? '#1a1a1a' : '#ffffff'};
+  max-width: 1200px;
+  margin: 0 auto;
+`;
+
+const Card = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['darkMode'].includes(prop)
+})`
+  background: ${props => props.darkMode ? '#1a1a1a' : '#ffffff'};
   border-radius: 1rem;
-  border: 1px solid ${props => props.$darkMode ? '#333' : '#e5e7eb'};
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border: 1px solid ${props => props.darkMode ? '#333' : '#e5e7eb'};
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 `;
 
 const StatusCard = styled.div`
@@ -19,14 +29,17 @@ const StatusCard = styled.div`
   color: white;
 `;
 
-const ActionButton = styled.button`
+const Button = styled.button`
   padding: 0.75rem 1.5rem;
-  margin: 0.5rem;
   border: none;
   border-radius: 0.5rem;
-  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    opacity: 0.9;
+  }
   
   &:disabled {
     opacity: 0.5;
@@ -34,29 +47,7 @@ const ActionButton = styled.button`
   }
 `;
 
-const ResumoCard = styled.div`
-  background: ${props => props.$darkMode ? '#2a2a2a' : '#f8f9fa'};
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-`;
-
-const GridResumo = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-`;
-
-const ItemResumo = styled.div`
-  text-align: center;
-  padding: 1rem;
-  background: ${props => props.$darkMode ? '#333' : '#ffffff'};
-  border-radius: 0.5rem;
-  border: 1px solid ${props => props.$darkMode ? '#444' : '#e5e7eb'};
-`;
-
-export default function CaixaController({ user, darkMode }) {
+export default function CaixaControllerMogi({ user, darkMode }) {
   const [caixaStatus, setCaixaStatus] = useState('fechado');
   const [valorInicial, setValorInicial] = useState(0);
   const [resumoDia, setResumoDia] = useState({
@@ -86,27 +77,124 @@ export default function CaixaController({ user, darkMode }) {
     try {
       const hoje = getBrasiliaDateOnly();
       
-      const { data, error } = await supabase
-        .from('fechamentos_caixa_tatuape')
+      const { data, error } = await queryWithStoreMogi('fechamentos_caixa')
         .select('*')
         .eq('usuario_id', user.id)
         .eq('data_fechamento', hoje)
         .eq('status', 'aberto')
         .maybeSingle();
       
-      console.log('Verificando caixa:', { data, error, hoje, userId: user.id });
+      console.log('Verificando caixa Mogi:', { data, error, hoje, userId: user.id });
       
       if (data && data.status === 'aberto') {
         setCaixaStatus('aberto');
         setValorInicial(data.valor_inicial || 0);
-        console.log('Caixa está aberto');
+        console.log('Caixa Mogi está aberto');
       } else {
         setCaixaStatus('fechado');
-        console.log('Caixa está fechado');
+        console.log('Caixa Mogi está fechado');
       }
     } catch (error) {
-      console.error('Erro ao verificar caixa:', error);
+      console.error('Erro ao verificar caixa Mogi:', error);
       setCaixaStatus('fechado');
+    }
+  };
+
+  const abrirCaixa = async () => {
+    const valor = prompt('Valor inicial no caixa (R$):');
+    if (valor === null) return;
+
+    const valorNumerico = parseFloat(valor) || 0;
+    
+    try {
+      const hoje = getBrasiliaDateOnly();
+      
+      // Verificar se já existe um fechamento para hoje
+      const { data: existente } = await queryWithStoreMogi('fechamentos_caixa')
+        .select('*')
+        .eq('usuario_id', user.id)
+        .eq('data_fechamento', hoje)
+        .single();
+      
+      if (existente) {
+        // Se já existe, apenas atualizar o status para aberto
+        const { error } = await queryWithStoreMogi('fechamentos_caixa')
+          .update({
+            valor_inicial: valorNumerico,
+            status: 'aberto'
+          })
+          .eq('usuario_id', user.id)
+          .eq('data_fechamento', hoje);
+        
+        if (error) throw error;
+      } else {
+        // Se não existe, criar novo
+        const { error } = await queryWithStoreMogi('fechamentos_caixa')
+          .insert({
+            usuario_id: user.id,
+            data_fechamento: hoje,
+            valor_inicial: valorNumerico,
+            status: 'aberto'
+          });
+        
+        if (error) throw error;
+      }
+      
+      setCaixaStatus('aberto');
+      setValorInicial(valorNumerico);
+      
+      // Forçar atualização do status
+      await verificarStatusCaixa();
+      await carregarResumoDia();
+      
+      // Recarregar a página para garantir sincronização
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
+      alert(`✅ Caixa Mogi aberto com valor inicial de R$ ${valorNumerico.toFixed(2)}`);
+    } catch (error) {
+      alert('❌ Erro ao abrir caixa Mogi: ' + error.message);
+    }
+  };
+
+  const fecharCaixa = async () => {
+    if (!confirm('⚠️ ATENÇÃO: Deseja realmente fechar o caixa?\n\nCertifique-se de ter gerado o relatório antes de fechar!')) {
+      return;
+    }
+
+    try {
+      const hoje = getBrasiliaDateOnly();
+      
+      // Atualizar status para fechado
+      const { error } = await queryWithStoreMogi('fechamentos_caixa')
+        .update({ 
+          status: 'fechado',
+          fechado_em: new Date().toISOString(),
+          relatorio_gerado: true
+        })
+        .eq('usuario_id', user.id)
+        .eq('data_fechamento', hoje);
+      
+      if (error) throw error;
+      
+      // Atualizar histórico
+      await queryWithStoreMogi('historico_caixa_diario')
+        .update({ status: 'fechado' })
+        .eq('usuario_id', user.id)
+        .eq('data_operacao', hoje);
+      
+      setCaixaStatus('fechado');
+      
+      // Recarregar a página para garantir sincronização
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
+      alert('✅ Caixa Mogi fechado com sucesso!\n\nO histórico foi mantido e o caixa está pronto para ser aberto no próximo dia.');
+      
+    } catch (error) {
+      alert('❌ Erro ao fechar caixa Mogi: ' + error.message);
     }
   };
 
@@ -115,8 +203,7 @@ export default function CaixaController({ user, darkMode }) {
       const hoje = getBrasiliaDateOnly();
       
       // Buscar valor inicial do caixa
-      const { data: caixaData } = await supabase
-        .from('fechamentos_caixa_tatuape')
+      const { data: caixaData } = await queryWithStoreMogi('fechamentos_caixa')
         .select('valor_inicial')
         .eq('usuario_id', user.id)
         .eq('data_fechamento', hoje)
@@ -125,12 +212,11 @@ export default function CaixaController({ user, darkMode }) {
       const valorInicial = parseFloat(caixaData?.valor_inicial || 0);
       
       // Buscar todas as vendas e filtrar por data
-      const { data: todasVendas, error: vendasError } = await supabase
-        .from('vendas_tatuape')
+      const { data: todasVendas, error: vendasError } = await queryWithStoreMogi('vendas')
         .select('*');
       
-      console.log('Todas as vendas:', todasVendas);
-      console.log('Erro vendas:', vendasError);
+      console.log('Todas as vendas Mogi:', todasVendas);
+      console.log('Erro vendas Mogi:', vendasError);
       
       // Filtrar vendas do dia
       const vendasData = todasVendas ? todasVendas.filter(venda => {
@@ -138,11 +224,10 @@ export default function CaixaController({ user, darkMode }) {
         return dataVenda && dataVenda.startsWith(hoje);
       }) : [];
       
-      console.log('Vendas do dia:', vendasData);
+      console.log('Vendas do dia Mogi:', vendasData);
       
       // Buscar saídas do dia
-      const { data: saidasData } = await supabase
-        .from('saidas_caixa_tatuape')
+      const { data: saidasData } = await queryWithStoreMogi('saidas_caixa')
         .select('*')
         .eq('data', hoje);
       
@@ -225,7 +310,7 @@ export default function CaixaController({ user, darkMode }) {
           const troco = parseFloat(venda.troco || 0);
           const formaPagamento = venda.forma_pagamento;
           
-          console.log('Processando venda:', { formaPagamento, valor, status: venda.status });
+          console.log('Processando venda Mogi:', { formaPagamento, valor, status: venda.status });
           
           // Só processar vendas finalizadas ou pendentes (não canceladas)
           if (venda.status !== 'cancelada' && formaPagamento !== 'pendente_caixa') {
@@ -251,8 +336,8 @@ export default function CaixaController({ user, darkMode }) {
       // Calcular total de saídas
       const total_saidas = saidasData ? saidasData.reduce((sum, saida) => sum + parseFloat(saida.valor || 0), 0) : 0;
       
-      console.log('Saídas do dia:', saidasData);
-      console.log('Total de saídas:', total_saidas);
+      console.log('Saídas do dia Mogi:', saidasData);
+      console.log('Total de saídas Mogi:', total_saidas);
       
       // Calcular totais
       const total_entradas = vendas_dinheiro + vendas_credito + vendas_debito + vendas_pix + vendas_link;
@@ -277,9 +362,7 @@ export default function CaixaController({ user, darkMode }) {
       });
       
     } catch (error) {
-      console.error('Erro ao carregar resumo:', error);
-      console.log('Dados de vendas:', vendasData);
-      console.log('Dados de saídas:', saidasData);
+      console.error('Erro ao carregar resumo Mogi:', error);
       // Em caso de erro, manter valores zerados
       setResumoDia({
         valor_inicial: 0,
@@ -301,67 +384,6 @@ export default function CaixaController({ user, darkMode }) {
     }
   };
 
-  const abrirCaixa = async () => {
-    const valor = prompt('Valor inicial no caixa (R$):');
-    if (valor === null) return;
-
-    const valorNumerico = parseFloat(valor) || 0;
-    
-    try {
-      const hoje = getBrasiliaDateOnly();
-      
-      // Verificar se já existe um fechamento para hoje
-      const { data: existente } = await supabase
-        .from('fechamentos_caixa_tatuape')
-        .select('*')
-        .eq('usuario_id', user.id)
-        .eq('data_fechamento', hoje)
-        .single();
-      
-      if (existente) {
-        // Se já existe, apenas atualizar o status para aberto
-        const { error } = await supabase
-          .from('fechamentos_caixa_tatuape')
-          .update({
-            valor_inicial: valorNumerico,
-            status: 'aberto'
-          })
-          .eq('usuario_id', user.id)
-          .eq('data_fechamento', hoje);
-        
-        if (error) throw error;
-      } else {
-        // Se não existe, criar novo
-        const { error } = await supabase
-          .from('fechamentos_caixa_tatuape')
-          .insert({
-            usuario_id: user.id,
-            data_fechamento: hoje,
-            valor_inicial: valorNumerico,
-            status: 'aberto'
-          });
-        
-        if (error) throw error;
-      }
-      
-      setCaixaStatus('aberto');
-      setValorInicial(valorNumerico);
-      
-      // Forçar atualização do status
-      await verificarStatusCaixa();
-      await carregarResumoDia();
-      
-      // Recarregar a página para garantir sincronização
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-      
-      alert(`✅ Caixa aberto com valor inicial de R$ ${valorNumerico.toFixed(2)}`);
-    } catch (error) {
-      alert('❌ Erro ao abrir caixa: ' + error.message);
-    }
-  };
-
   const gerarRelatorio = async () => {
     try {
       const hoje = new Date().toLocaleDateString('pt-BR');
@@ -376,7 +398,7 @@ export default function CaixaController({ user, darkMode }) {
       const relatorio = `
 ╔══════════════════════════════════════════════════════════════╗
 ║                    RELATÓRIO DE FECHAMENTO                  ║
-║                        CAIXA TATUAPÉ                        ║
+║                         CAIXA MOGI                          ║
 ╚══════════════════════════════════════════════════════════════╝
 
 📅 DATA: ${hoje} | ⏰ HORÁRIO: ${agora.split(' ')[1]}
@@ -410,7 +432,7 @@ export default function CaixaController({ user, darkMode }) {
 🔗 LINK DE PAGAMENTO:
    Valor: R$ ${(resumoDia.vendas_link || 0).toFixed(2)}
 
-┌─────────────────────────────────────────────────────��───────┐
+┌────────────────────────────────────────────────────────────┐
 │                    ANÁLISE FINANCEIRA                      │
 └─────────────────────────────────────────────────────────────┘
 📈 Total Recebido: R$ ${resumoDia.total_entradas.toFixed(2)}
@@ -437,8 +459,7 @@ export default function CaixaController({ user, darkMode }) {
 
       // Salvar relatório no histórico
       const hoje_iso = getBrasiliaDateOnly();
-      await supabase
-        .from('historico_caixa_diario_tatuape')
+      await queryWithStoreMogi('historico_caixa_diario')
         .upsert({
           usuario_id: user.id,
           data_operacao: hoje_iso,
@@ -447,7 +468,7 @@ export default function CaixaController({ user, darkMode }) {
         });
 
     } catch (error) {
-      alert('❌ Erro ao gerar relatório: ' + error.message);
+      alert('❌ Erro ao gerar relatório Mogi: ' + error.message);
     }
   };
 
@@ -467,48 +488,6 @@ export default function CaixaController({ user, darkMode }) {
     return maior.nome;
   };
 
-  const fecharCaixa = async () => {
-    if (!confirm('⚠️ ATENÇÃO: Deseja realmente fechar o caixa?\n\nCertifique-se de ter gerado o relatório antes de fechar!')) {
-      return;
-    }
-
-    try {
-      const hoje = getBrasiliaDateOnly();
-      
-      // Atualizar status para fechado
-      const { error } = await supabase
-        .from('fechamentos_caixa_tatuape')
-        .update({ 
-          status: 'fechado',
-          fechado_em: new Date().toISOString(),
-          relatorio_gerado: true
-        })
-        .eq('usuario_id', user.id)
-        .eq('data_fechamento', hoje);
-      
-      if (error) throw error;
-      
-      // Atualizar histórico
-      await supabase
-        .from('historico_caixa_diario_tatuape')
-        .update({ status: 'fechado' })
-        .eq('usuario_id', user.id)
-        .eq('data_operacao', hoje);
-      
-      setCaixaStatus('fechado');
-      
-      // Recarregar a página para garantir sincronização
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-      
-      alert('✅ Caixa fechado com sucesso!\n\nO histórico foi mantido e o caixa está pronto para ser aberto no próximo dia.');
-      
-    } catch (error) {
-      alert('❌ Erro ao fechar caixa: ' + error.message);
-    }
-  };
-
   const gerarPDF = async () => {
     try {
       // Importar jsPDF dinamicamente
@@ -524,7 +503,7 @@ export default function CaixaController({ user, darkMode }) {
       // Cabeçalho
       doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      doc.text('RELATÓRIO DE FECHAMENTO DE CAIXA', 20, 20);
+      doc.text('RELATÓRIO DE FECHAMENTO DE CAIXA - MOGI', 20, 20);
       
       doc.setFontSize(12);
       doc.setFont('helvetica', 'normal');
@@ -635,10 +614,10 @@ export default function CaixaController({ user, darkMode }) {
       doc.text(`Status: Caixa ${caixaStatus}`, 20, yPos + 32);
       
       // Salvar PDF
-      doc.save(`Relatorio_Caixa_${hoje.replace(/\//g, '-')}.pdf`);
+      doc.save(`Relatorio_Caixa_Mogi_${hoje.replace(/\//g, '-')}.pdf`);
       
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
+      console.error('Erro ao gerar PDF Mogi:', error);
       alert('❌ Erro ao gerar PDF. Usando impressão alternativa...');
       imprimirRelatorio();
     }
@@ -649,7 +628,7 @@ export default function CaixaController({ user, darkMode }) {
     janela.document.write(`
       <html>
         <head>
-          <title>Relatório de Fechamento - ${new Date().toLocaleDateString('pt-BR')}</title>
+          <title>Relatório de Fechamento Mogi - ${new Date().toLocaleDateString('pt-BR')}</title>
           <style>
             body { font-family: 'Courier New', monospace; margin: 20px; }
             pre { white-space: pre-wrap; }
@@ -664,77 +643,113 @@ export default function CaixaController({ user, darkMode }) {
   };
 
   return (
-    <Container $darkMode={darkMode}>
+    <Container>
       <StatusCard status={caixaStatus}>
-        <h2>{caixaStatus === 'aberto' ? '🔓 CAIXA ABERTO' : '🔒 CAIXA FECHADO'}</h2>
+        <h2>{caixaStatus === 'aberto' ? '🔓 CAIXA ABERTO - MOGI' : '🔒 CAIXA FECHADO - MOGI'}</h2>
         {caixaStatus === 'aberto' && (
           <p>Valor inicial: R$ {valorInicial.toFixed(2)}</p>
         )}
       </StatusCard>
 
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
-        <ActionButton
+        <Button
           onClick={abrirCaixa}
           disabled={caixaStatus === 'aberto'}
           style={{
             background: caixaStatus === 'aberto' ? '#666' : '#10b981',
-            color: 'white'
+            color: 'white',
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            borderRadius: '0.5rem',
+            cursor: caixaStatus === 'aberto' ? 'not-allowed' : 'pointer',
+            fontWeight: '600'
           }}
         >
           🔓 Abrir Caixa
-        </ActionButton>
+        </Button>
 
-        <ActionButton
+        <Button
           onClick={gerarRelatorio}
           disabled={caixaStatus === 'fechado'}
           style={{
             background: caixaStatus === 'fechado' ? '#666' : '#3b82f6',
-            color: 'white'
+            color: 'white',
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            borderRadius: '0.5rem',
+            cursor: caixaStatus === 'fechado' ? 'not-allowed' : 'pointer',
+            fontWeight: '600'
           }}
         >
           📄 Gerar Relatório
-        </ActionButton>
+        </Button>
 
-        <ActionButton
+        <Button
           onClick={fecharCaixa}
           disabled={caixaStatus === 'fechado'}
           style={{
             background: caixaStatus === 'fechado' ? '#666' : '#ef4444',
-            color: 'white'
+            color: 'white',
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            borderRadius: '0.5rem',
+            cursor: caixaStatus === 'fechado' ? 'not-allowed' : 'pointer',
+            fontWeight: '600'
           }}
         >
           🔒 Fechar Caixa
-        </ActionButton>
+        </Button>
         
-        <ActionButton
+        <Button
           onClick={() => {
             verificarStatusCaixa();
             carregarResumoDia();
           }}
           style={{
             background: '#f59e0b',
-            color: 'white'
+            color: 'white',
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            borderRadius: '0.5rem',
+            cursor: 'pointer',
+            fontWeight: '600'
           }}
         >
           🔄 Atualizar Status
-        </ActionButton>
+        </Button>
       </div>
 
-      <ResumoCard $darkMode={darkMode}>
+      <Card $darkMode={darkMode}>
         <h3 style={{ color: darkMode ? '#fff' : '#000', marginBottom: '1rem' }}>
-          📊 Resumo do Dia
+          📊 Resumo do Dia - Mogi
         </h3>
         
-        <GridResumo>
-          <ItemResumo $darkMode={darkMode}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '1rem'
+        }}>
+          <div style={{
+            background: darkMode ? '#2a2a2a' : '#f8f9fa',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            textAlign: 'center',
+            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
+          }}>
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💰</div>
             <div style={{ fontSize: '0.9rem', color: '#666' }}>Valor Inicial</div>
             <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#10b981' }}>
               {formatCurrency(resumoDia.valor_inicial)}
             </div>
-          </ItemResumo>
+          </div>
 
-          <ItemResumo $darkMode={darkMode}>
+          <div style={{
+            background: darkMode ? '#2a2a2a' : '#f8f9fa',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            textAlign: 'center',
+            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
+          }}>
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💵</div>
             <div style={{ fontSize: '0.9rem', color: '#666' }}>Dinheiro</div>
             <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#10b981' }}>
@@ -743,9 +758,15 @@ export default function CaixaController({ user, darkMode }) {
             <div style={{ fontSize: '0.8rem', color: '#888' }}>
               {formatCurrency(resumoDia.vendas_dinheiro)}
             </div>
-          </ItemResumo>
+          </div>
 
-          <ItemResumo $darkMode={darkMode}>
+          <div style={{
+            background: darkMode ? '#2a2a2a' : '#f8f9fa',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            textAlign: 'center',
+            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
+          }}>
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💳</div>
             <div style={{ fontSize: '0.9rem', color: '#666' }}>Cartões</div>
             <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#3b82f6' }}>
@@ -754,9 +775,15 @@ export default function CaixaController({ user, darkMode }) {
             <div style={{ fontSize: '0.8rem', color: '#888' }}>
               {formatCurrency(resumoDia.vendas_credito + resumoDia.vendas_debito)}
             </div>
-          </ItemResumo>
+          </div>
 
-          <ItemResumo $darkMode={darkMode}>
+          <div style={{
+            background: darkMode ? '#2a2a2a' : '#f8f9fa',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            textAlign: 'center',
+            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
+          }}>
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📱</div>
             <div style={{ fontSize: '0.9rem', color: '#666' }}>PIX</div>
             <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#f59e0b' }}>
@@ -765,25 +792,43 @@ export default function CaixaController({ user, darkMode }) {
             <div style={{ fontSize: '0.8rem', color: '#888' }}>
               {formatCurrency(resumoDia.vendas_pix)}
             </div>
-          </ItemResumo>
+          </div>
 
-          <ItemResumo $darkMode={darkMode}>
+          <div style={{
+            background: darkMode ? '#2a2a2a' : '#f8f9fa',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            textAlign: 'center',
+            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
+          }}>
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🔗</div>
             <div style={{ fontSize: '0.9rem', color: '#666' }}>Link Pagamento</div>
             <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#6366f1' }}>
               {formatCurrency(resumoDia.vendas_link || 0)}
             </div>
-          </ItemResumo>
+          </div>
 
-          <ItemResumo $darkMode={darkMode}>
+          <div style={{
+            background: darkMode ? '#2a2a2a' : '#f8f9fa',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            textAlign: 'center',
+            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
+          }}>
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📉</div>
             <div style={{ fontSize: '0.9rem', color: '#666' }}>Saídas</div>
             <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#ef4444' }}>
               {formatCurrency(resumoDia.total_saidas)}
             </div>
-          </ItemResumo>
+          </div>
 
-          <ItemResumo $darkMode={darkMode}>
+          <div style={{
+            background: darkMode ? '#2a2a2a' : '#f8f9fa',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            textAlign: 'center',
+            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
+          }}>
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💰</div>
             <div style={{ fontSize: '0.9rem', color: '#666' }}>Saldo Final</div>
             <div style={{ 
@@ -793,9 +838,9 @@ export default function CaixaController({ user, darkMode }) {
             }}>
               {formatCurrency(resumoDia.saldo_final)}
             </div>
-          </ItemResumo>
-        </GridResumo>
-      </ResumoCard>
+          </div>
+        </div>
+      </Card>
 
       {/* Modal do Relatório */}
       {showRelatorio && (
@@ -828,7 +873,7 @@ export default function CaixaController({ user, darkMode }) {
               marginBottom: '1.5rem'
             }}>
               <h2 style={{ color: darkMode ? '#fff' : '#000', margin: 0 }}>
-                📄 Relatório de Fechamento
+                📄 Relatório de Fechamento - Mogi
               </h2>
               <button
                 onClick={() => setShowRelatorio(false)}
@@ -864,35 +909,50 @@ export default function CaixaController({ user, darkMode }) {
               justifyContent: 'center',
               marginTop: '1.5rem'
             }}>
-              <ActionButton
+              <Button
                 onClick={gerarPDF}
                 style={{
                   background: '#ef4444',
-                  color: 'white'
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: '600'
                 }}
               >
                 📄 Gerar PDF
-              </ActionButton>
+              </Button>
               
-              <ActionButton
+              <Button
                 onClick={imprimirRelatorio}
                 style={{
                   background: '#10b981',
-                  color: 'white'
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: '600'
                 }}
               >
                 🖨️ Imprimir
-              </ActionButton>
+              </Button>
               
-              <ActionButton
+              <Button
                 onClick={() => setShowRelatorio(false)}
                 style={{
                   background: darkMode ? '#333' : '#f3f4f6',
-                  color: darkMode ? '#fff' : '#000'
+                  color: darkMode ? '#fff' : '#000',
+                  padding: '0.75rem 1.5rem',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: '600'
                 }}
               >
                 Fechar
-              </ActionButton>
+              </Button>
             </div>
           </div>
         </div>

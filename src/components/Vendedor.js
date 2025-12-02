@@ -59,8 +59,9 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
   }, []);
 
   const carregarVendasStandby = async () => {
+    const loja = user.loja || 'tatuape';
     const { data } = await supabase
-      .from('vendas_standby_tatuape')
+      .from(`vendas_standby_${loja}`)
       .select('*')
       .order('created_at', { ascending: false });
     setVendasStandby(data || []);
@@ -69,8 +70,9 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
   const verificarClienteStandby = async (telefone) => {
     if (!telefone || telefone.length < 10) return null;
     
+    const loja = user.loja || 'tatuape';
     const { data } = await supabase
-      .from('vendas_standby_tatuape')
+      .from(`vendas_standby_${loja}`)
       .select('vendedor_nome')
       .eq('cliente_telefone', telefone)
       .neq('vendedor_nome', user.nome)
@@ -82,8 +84,9 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
   const cadastrarCliente = async (dadosCliente) => {
     if (!dadosCliente.nome) return;
     
+    const loja = user.loja || 'tatuape';
     const { error } = await supabase
-      .from('clientes_tatuape')
+      .from(`clientes_${loja}`)
       .upsert({
         nome_completo: dadosCliente.nome,
         telefone: dadosCliente.telefone || null,
@@ -96,8 +99,9 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
   };
 
   const carregarProdutos = async () => {
+    const loja = user.loja || 'tatuape';
     const { data } = await supabase
-      .from('produtos_tatuape')
+      .from(`produtos_${loja}`)
       .select('*')
       .eq('ativo', true)
       .gt('estoque_atual', 0)
@@ -139,8 +143,9 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
     const hoje = new Date();
     const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
     
+    const loja = user.loja || 'tatuape';
     const { data } = await supabase
-      .from('vendas_tatuape')
+      .from(`vendas_${loja}`)
       .select('valor_final')
       .eq('vendedor_nome', user.nome)
       .gte('data_venda', inicioMes.toISOString())
@@ -213,9 +218,10 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
         ondeConheceuOutro
       });
 
+      const loja = user.loja || 'tatuape';
       // Salvar no banco
       const { error } = await supabase
-        .from('vendas_standby_tatuape')
+        .from(`vendas_standby_${loja}`)
         .insert([{
           vendedor_nome: user.nome,
           cliente_nome: clienteNome,
@@ -257,9 +263,10 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
       setOndeConheceuOutro('');
       setEtapa(2);
       
+      const loja = user.loja || 'tatuape';
       // Remove do banco
       await supabase
-        .from('vendas_standby_tatuape')
+        .from(`vendas_standby_${loja}`)
         .delete()
         .eq('id', venda.id);
       
@@ -272,8 +279,9 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
   const cancelarVendaStandby = async (vendaId) => {
     if (confirm('Tem certeza que deseja cancelar esta venda?')) {
       try {
+        const loja = user.loja || 'tatuape';
         await supabase
-          .from('vendas_standby_tatuape')
+          .from(`vendas_standby_${loja}`)
           .delete()
           .eq('id', vendaId);
         
@@ -288,13 +296,14 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
     if (processandoVenda) return;
     setProcessandoVenda(true);
 
-    const numeroVenda = `TAT-${Date.now()}`;
+    const loja = user.loja || 'tatuape';
+    const numeroVenda = `${loja.toUpperCase()}-${Date.now()}`;
     const valorTotal = venda.valor_total;
     const carrinho = JSON.parse(venda.carrinho);
 
     try {
       const { data: vendaData, error: vendaError } = await supabase
-        .from('vendas_tatuape')
+        .from(`vendas_${loja}`)
         .insert([{
           numero_venda: numeroVenda,
           vendedor_nome: user.nome,
@@ -321,7 +330,7 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
       }));
 
       const { error: itensError } = await supabase
-        .from('itens_venda_tatuape')
+        .from(`itens_venda_${loja}`)
         .insert(itens);
 
       if (itensError) throw itensError;
@@ -330,12 +339,12 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
       for (const item of carrinho) {
         const novoEstoque = item.estoque_atual - item.quantidade;
         await supabase
-          .from('produtos_tatuape')
+          .from(`produtos_${loja}`)
           .update({ estoque_atual: novoEstoque })
           .eq('id', item.id);
 
         await supabase
-          .from('movimentacoes_estoque_tatuape')
+          .from(`movimentacoes_estoque_${loja}`)
           .insert([{
             produto_id: item.id,
             tipo_movimentacao: 'venda',
@@ -350,7 +359,7 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
 
       // Remove do standby
       await supabase
-        .from('vendas_standby_tatuape')
+        .from(`vendas_standby_${loja}`)
         .delete()
         .eq('id', venda.id);
 
@@ -380,7 +389,8 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
     }
 
     setProcessandoVenda(true);
-    const numeroVenda = `TAT-${Date.now()}`;
+    const loja = user.loja || 'tatuape';
+    const numeroVenda = `${loja.toUpperCase()}-${Date.now()}`;
     const valorTotal = calcularTotal();
 
     try {
@@ -395,7 +405,7 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
       });
       // Inserir venda
       const { data: venda, error: vendaError } = await supabase
-        .from('vendas_tatuape')
+        .from(`vendas_${loja}`)
         .insert([{
           numero_venda: numeroVenda,
           vendedor_nome: user.nome,
@@ -411,7 +421,7 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
       // Salvar dados extras do cliente se fornecidos
       if (clienteCidade || clienteCpf || ondeConheceu) {
         await supabase
-          .from('clientes_tatuape')
+          .from(`clientes_${loja}`)
           .insert([{
             nome_completo: clienteNome,
             telefone: clienteTelefone || null,
@@ -435,7 +445,7 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
       }));
 
       const { error: itensError } = await supabase
-        .from('itens_venda_tatuape')
+        .from(`itens_venda_${loja}`)
         .insert(itens);
 
       if (itensError) throw itensError;
@@ -444,13 +454,13 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
       for (const item of carrinho) {
         const novoEstoque = item.estoque_atual - item.quantidade;
         await supabase
-          .from('produtos_tatuape')
+          .from(`produtos_${loja}`)
           .update({ estoque_atual: novoEstoque })
           .eq('id', item.id);
 
         // Registrar movimentação
         await supabase
-          .from('movimentacoes_estoque_tatuape')
+          .from(`movimentacoes_estoque_${loja}`)
           .insert([{
             produto_id: item.id,
             tipo_movimentacao: 'venda',
@@ -515,7 +525,7 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
               }}
             />
             <div>
-              <h1 style={{ fontSize: '1.8rem', fontWeight: '800', margin: 0 }}>VENDAS - TATUAPÉ</h1>
+              <h1 style={{ fontSize: '1.8rem', fontWeight: '800', margin: 0 }}>VENDAS - {user.loja === 'mogi' ? 'MOGI DAS CRUZES' : 'TATUAPÉ'}</h1>
               <p style={{ fontSize: '0.9rem', opacity: 0.8, margin: '0.25rem 0 0 0' }}>
                 {user.nome} • {new Date().toLocaleDateString('pt-BR')}
               </p>
@@ -1133,9 +1143,10 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
               onChange={async (e) => {
                 setClienteTelefone(e.target.value);
                 if (e.target.value.length >= 10) {
+                  const loja = user.loja || 'tatuape';
                   // Verificar se cliente já existe
                   const { data: clienteExistente } = await supabase
-                    .from('clientes_tatuape')
+                    .from(`clientes_${loja}`)
                     .select('*')
                     .eq('telefone', e.target.value)
                     .single();
@@ -1211,8 +1222,9 @@ function VendedorDesktop({ user, onLogout, showProfile }) {
               onChange={async (e) => {
                 setClienteCpf(e.target.value);
                 if (e.target.value.length >= 11) {
+                  const loja = user.loja || 'tatuape';
                   const { data: cpfExistente } = await supabase
-                    .from('clientes_tatuape')
+                    .from(`clientes_${loja}`)
                     .select('nome_completo')
                     .eq('cpf', e.target.value)
                     .neq('telefone', clienteTelefone)

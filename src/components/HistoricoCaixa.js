@@ -65,8 +65,9 @@ export default function HistoricoCaixa({ user, darkMode }) {
 
   const carregarHistorico = async () => {
     try {
+      const loja = user.loja || 'tatuape';
       const { data } = await supabase
-        .from('fechamentos_caixa_tatuape')
+        .from(`fechamentos_caixa_${loja}`)
         .select('*')
         .eq('usuario_id', user.id)
         .order('data_fechamento', { ascending: false })
@@ -86,9 +87,11 @@ export default function HistoricoCaixa({ user, darkMode }) {
       
       const dataFechamento = fechamento.data_fechamento;
       
+      const loja = user.loja || 'tatuape';
+      
       // Buscar vendas do dia
       const { data: vendas } = await supabase
-        .from('vendas_tatuape')
+        .from(`vendas_${loja}`)
         .select('*')
         .gte('data_venda', dataFechamento)
         .lt('data_venda', new Date(new Date(dataFechamento).getTime() + 24*60*60*1000).toISOString().split('T')[0])
@@ -97,7 +100,7 @@ export default function HistoricoCaixa({ user, darkMode }) {
       
       // Buscar saídas do dia
       const { data: saidas } = await supabase
-        .from('saidas_caixa_tatuape')
+        .from(`saidas_caixa_${loja}`)
         .select('*')
         .eq('data', dataFechamento)
         .order('created_at', { ascending: false });

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { authService } from '../utils/supabase';
-import LoadingScreen from './LoadingScreen';
+import { authService } from '../../utils/supabase';
+import LoadingScreen from '../LoadingScreen';
 
 const LoginScreen = styled.div`
   display: flex;
@@ -162,15 +162,15 @@ const Input = styled.input`
 const Button = styled.button`
   width: 100%;
   padding: 22px;
-  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
-  color: #000000;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
   border: none;
   border-radius: 18px;
   font-weight: 700;
   font-size: 17px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 12px 30px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.25);
   text-transform: uppercase;
   letter-spacing: 1.5px;
   box-sizing: border-box;
@@ -184,8 +184,8 @@ const Button = styled.button`
   
   &:hover { 
     transform: translateY(-4px);
-    box-shadow: 0 16px 40px rgba(255, 255, 255, 0.35);
-    background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
+    box-shadow: 0 16px 40px rgba(16, 185, 129, 0.35);
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
   }
   &:active { transform: translateY(-2px); }
   &:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
@@ -231,20 +231,20 @@ const StoreIndicator = styled.div`
   position: absolute;
   top: 20px;
   right: 20px;
-  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
-  color: #000000;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
   padding: 0.75rem 1.5rem;
   border-radius: 2rem;
   font-weight: 700;
   font-size: 0.9rem;
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
   z-index: 1000;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 `;
 
-export default function Login({ onLogin }) {
+export default function LoginMogi({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -273,22 +273,15 @@ export default function Login({ onLogin }) {
     }
     
     try {
-      const { user, error, redirectTo, redirectPath } = await authService.login(username, password);
-      
-      console.log('=== LOGIN COMPONENT ===');
-      console.log('User:', user);
-      console.log('RedirectTo:', redirectTo);
-      console.log('RedirectPath:', redirectPath);
+      const { user, error, redirectPath } = await authService.login(username, password);
       
       if (error) {
         setError(error);
       } else {
-        // Redirecionar automaticamente para a página correta baseada na loja e cargo
-        if (redirectTo === 'mogi') {
-          console.log('Redirecionando para Mogi:', redirectPath);
+        // Se o usuário é de Mogi, redirecionar para a página correta
+        if (user && user.loja === 'mogi' && redirectPath) {
           window.location.href = redirectPath;
         } else {
-          console.log('Fazendo login local para Tatuapé');
           onLogin(user);
         }
       }
@@ -302,7 +295,9 @@ export default function Login({ onLogin }) {
 
   return (
     <LoginScreen>
-
+      <StoreIndicator>
+        🏪 LOJA MOGI DAS CRUZES
+      </StoreIndicator>
       
       <LeftPanel>
         <LogoContainer>
@@ -310,14 +305,14 @@ export default function Login({ onLogin }) {
             src="/images/logo.png" 
             alt="VH Alfaiataria" 
           />
-          <Subtitle>Sistema de Gestão Multi-Lojas</Subtitle>
-
+          <Subtitle>Sistema de Gestão - Mogi</Subtitle>
         </LogoContainer>
       </LeftPanel>
       
       <RightPanel>
         <LoginForm>
           <FormTitle>Acesso ao Sistema</FormTitle>
+          
           <Label>Email</Label>
           <Input
             type="email"
