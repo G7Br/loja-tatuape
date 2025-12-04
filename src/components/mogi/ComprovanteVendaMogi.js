@@ -149,12 +149,12 @@ export default function ComprovanteVendaMogi({ venda, itens, onClose, dadosPagam
       <ComprovanteContainer>
         <ComprovanteContent className="comprovante-content">
           <Header>
-            <Logo>VH ALFAIATARIA</Logo>
+            <Logo>VH</Logo>
             <div>LOJA MOGI DAS CRUZES</div>
             <div style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>
-              Rua das Flores, 123 - Centro<br/>
+              Av. Fernando Costa, 195 - Centro<br/>
               Mogi das Cruzes - SP<br/>
-              Tel: (11) 4728-0000
+              Tel:  (11) 91323-5358
             </div>
           </Header>
 
@@ -240,7 +240,7 @@ export default function ComprovanteVendaMogi({ venda, itens, onClose, dadosPagam
           <Footer>
             <div>Obrigado pela preferência!</div>
             <div style={{ marginTop: '0.5rem' }}>
-              www.vhalfaiataria.com.br
+              https://www.vhgravatas.com/
             </div>
             <div style={{ marginTop: '1rem', fontSize: '0.7rem' }}>
               Via do Cliente - Mogi das Cruzes
