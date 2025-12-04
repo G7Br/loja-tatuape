@@ -7,6 +7,7 @@ const Container = styled.div`
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
+  color: ${props => props.$darkMode ? '#ffffff' : '#1a1a1a'};
 `;
 
 const Card = styled.div.withConfig({
@@ -169,9 +170,7 @@ export default function CaixaControllerMogi({ user, darkMode }) {
       // Atualizar status para fechado
       const { error } = await queryWithStoreMogi('fechamentos_caixa')
         .update({ 
-          status: 'fechado',
-          fechado_em: new Date().toISOString(),
-          relatorio_gerado: true
+          status: 'fechado'
         })
         .eq('usuario_id', user.id)
         .eq('data_fechamento', hoje);
@@ -643,7 +642,7 @@ export default function CaixaControllerMogi({ user, darkMode }) {
   };
 
   return (
-    <Container>
+    <Container $darkMode={darkMode}>
       <StatusCard status={caixaStatus}>
         <h2>{caixaStatus === 'aberto' ? '🔓 CAIXA ABERTO - MOGI' : '🔒 CAIXA FECHADO - MOGI'}</h2>
         {caixaStatus === 'aberto' && (
@@ -729,116 +728,35 @@ export default function CaixaControllerMogi({ user, darkMode }) {
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '1rem'
         }}>
-          <div style={{
-            background: darkMode ? '#2a2a2a' : '#f8f9fa',
-            padding: '1rem',
-            borderRadius: '0.5rem',
-            textAlign: 'center',
-            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
-          }}>
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💰</div>
-            <div style={{ fontSize: '0.9rem', color: '#666' }}>Valor Inicial</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#10b981' }}>
-              {formatCurrency(resumoDia.valor_inicial)}
-            </div>
-          </div>
-
-          <div style={{
-            background: darkMode ? '#2a2a2a' : '#f8f9fa',
-            padding: '1rem',
-            borderRadius: '0.5rem',
-            textAlign: 'center',
-            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
-          }}>
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💵</div>
-            <div style={{ fontSize: '0.9rem', color: '#666' }}>Dinheiro</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#10b981' }}>
-              {resumoDia.qtd_vendas_dinheiro} vendas
-            </div>
-            <div style={{ fontSize: '0.8rem', color: '#888' }}>
-              {formatCurrency(resumoDia.vendas_dinheiro)}
-            </div>
-          </div>
-
-          <div style={{
-            background: darkMode ? '#2a2a2a' : '#f8f9fa',
-            padding: '1rem',
-            borderRadius: '0.5rem',
-            textAlign: 'center',
-            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
-          }}>
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💳</div>
-            <div style={{ fontSize: '0.9rem', color: '#666' }}>Cartões</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#3b82f6' }}>
-              {resumoDia.qtd_vendas_credito + resumoDia.qtd_vendas_debito} vendas
-            </div>
-            <div style={{ fontSize: '0.8rem', color: '#888' }}>
-              {formatCurrency(resumoDia.vendas_credito + resumoDia.vendas_debito)}
-            </div>
-          </div>
-
-          <div style={{
-            background: darkMode ? '#2a2a2a' : '#f8f9fa',
-            padding: '1rem',
-            borderRadius: '0.5rem',
-            textAlign: 'center',
-            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
-          }}>
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📱</div>
-            <div style={{ fontSize: '0.9rem', color: '#666' }}>PIX</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#f59e0b' }}>
-              {resumoDia.qtd_vendas_pix} vendas
-            </div>
-            <div style={{ fontSize: '0.8rem', color: '#888' }}>
-              {formatCurrency(resumoDia.vendas_pix)}
-            </div>
-          </div>
-
-          <div style={{
-            background: darkMode ? '#2a2a2a' : '#f8f9fa',
-            padding: '1rem',
-            borderRadius: '0.5rem',
-            textAlign: 'center',
-            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
-          }}>
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🔗</div>
-            <div style={{ fontSize: '0.9rem', color: '#666' }}>Link Pagamento</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#6366f1' }}>
-              {formatCurrency(resumoDia.vendas_link || 0)}
-            </div>
-          </div>
-
-          <div style={{
-            background: darkMode ? '#2a2a2a' : '#f8f9fa',
-            padding: '1rem',
-            borderRadius: '0.5rem',
-            textAlign: 'center',
-            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
-          }}>
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📉</div>
-            <div style={{ fontSize: '0.9rem', color: '#666' }}>Saídas</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#ef4444' }}>
-              {formatCurrency(resumoDia.total_saidas)}
-            </div>
-          </div>
-
-          <div style={{
-            background: darkMode ? '#2a2a2a' : '#f8f9fa',
-            padding: '1rem',
-            borderRadius: '0.5rem',
-            textAlign: 'center',
-            border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
-          }}>
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💰</div>
-            <div style={{ fontSize: '0.9rem', color: '#666' }}>Saldo Final</div>
-            <div style={{ 
-              fontSize: '1.2rem', 
-              fontWeight: '700', 
-              color: resumoDia.saldo_final >= 0 ? '#10b981' : '#ef4444' 
+          {[
+            { icon: '💰', label: 'Valor Inicial', value: formatCurrency(resumoDia.valor_inicial), color: '#10b981' },
+            { icon: '💵', label: 'Dinheiro', value: `${resumoDia.qtd_vendas_dinheiro} vendas`, subValue: formatCurrency(resumoDia.vendas_dinheiro), color: '#10b981' },
+            { icon: '💳', label: 'Cartões', value: `${resumoDia.qtd_vendas_credito + resumoDia.qtd_vendas_debito} vendas`, subValue: formatCurrency(resumoDia.vendas_credito + resumoDia.vendas_debito), color: '#3b82f6' },
+            { icon: '📱', label: 'PIX', value: `${resumoDia.qtd_vendas_pix} vendas`, subValue: formatCurrency(resumoDia.vendas_pix), color: '#f59e0b' },
+            { icon: '🔗', label: 'Link Pagamento', value: formatCurrency(resumoDia.vendas_link || 0), color: '#6366f1' },
+            { icon: '📉', label: 'Saídas', value: formatCurrency(resumoDia.total_saidas), color: '#ef4444' },
+            { icon: '💰', label: 'Saldo Final', value: formatCurrency(resumoDia.saldo_final), color: resumoDia.saldo_final >= 0 ? '#10b981' : '#ef4444' }
+          ].map((item, index) => (
+            <div key={index} style={{
+              background: darkMode ? '#2a2a2a' : '#f8f9fa',
+              padding: '1rem',
+              borderRadius: '0.5rem',
+              textAlign: 'center',
+              border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
+              color: darkMode ? '#ffffff' : '#1a1a1a'
             }}>
-              {formatCurrency(resumoDia.saldo_final)}
+              <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{item.icon}</div>
+              <div style={{ fontSize: '0.9rem', color: darkMode ? '#ccc' : '#666' }}>{item.label}</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: '700', color: item.color }}>
+                {item.value}
+              </div>
+              {item.subValue && (
+                <div style={{ fontSize: '0.8rem', color: darkMode ? '#ddd' : '#888' }}>
+                  {item.subValue}
+                </div>
+              )}
             </div>
-          </div>
+          ))}
         </div>
       </Card>
 
