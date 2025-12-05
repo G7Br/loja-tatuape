@@ -1,0 +1,853 @@
+{
+  "data_geracao": "2025-12-04 20:07:42",
+  "periodo": "Black Friday 2024 (29/11/2024)",
+  "resumo_geral": {
+    "total_vendas": 145,
+    "valor_total": 188010.97,
+    "ticket_medio": 1296.6273793103448
+  },
+  "vendas_por_vendedor": {
+    "Kauan": {
+      "vendas": 15,
+      "valor": 16900.0
+    },
+    "Daniel": {
+      "vendas": 12,
+      "valor": 16949.97
+    },
+    "Tales": {
+      "vendas": 12,
+      "valor": 16900.0
+    },
+    "Jean": {
+      "vendas": 25,
+      "valor": 24130.0
+    },
+    "Gabriel": {
+      "vendas": 18,
+      "valor": 19599.96
+    },
+    "Divino": {
+      "vendas": 16,
+      "valor": 18000.0
+    },
+    "Thales": {
+      "vendas": 15,
+      "valor": 19400.0
+    },
+    "Jhonatas": {
+      "vendas": 13,
+      "valor": 15300.0
+    },
+    "Breno": {
+      "vendas": 9,
+      "valor": 10900.0
+    },
+    "Jean Carlos": {
+      "vendas": 10,
+      "valor": 29931.04
+    }
+  },
+  "produtos_mais_vendidos": {
+    "Choseman 1": {
+      "quantidade": 43,
+      "valor": 25799.989999999998
+    },
+    "Alfaiataria VH": {
+      "quantidade": 42,
+      "valor": 37800.0
+    },
+    "Choseman 11": {
+      "quantidade": 39,
+      "valor": 23399.98
+    },
+    "Choseman 10": {
+      "quantidade": 37,
+      "valor": 22199.97
+    },
+    "GRAVATA SEDA ": {
+      "quantidade": 31,
+      "valor": 3100.0
+    },
+    "Choseman 12": {
+      "quantidade": 23,
+      "valor": 13799.99
+    },
+    "Choseman 15": {
+      "quantidade": 21,
+      "valor": 12600.0
+    },
+    "Choseman 13": {
+      "quantidade": 15,
+      "valor": 9000.0
+    },
+    "Choseman 14": {
+      "quantidade": 8,
+      "valor": 4800.0
+    },
+    "Choseman 16": {
+      "quantidade": 5,
+      "valor": 3000.0
+    },
+    "Choseman 17": {
+      "quantidade": 3,
+      "valor": 1800.0
+    },
+    "Traspassado A": {
+      "quantidade": 3,
+      "valor": 4500.0
+    },
+    " Transpassado A": {
+      "quantidade": 2,
+      "valor": 3000.0
+    },
+    "Traspassado G": {
+      "quantidade": 2,
+      "valor": 3000.0
+    },
+    "Choseman 18": {
+      "quantidade": 2,
+      "valor": 1200.0
+    },
+    "Choseman 19": {
+      "quantidade": 2,
+      "valor": 1200.0
+    },
+    "Choseman 4": {
+      "quantidade": 1,
+      "valor": 600.0
+    },
+    "Choseman 2": {
+      "quantidade": 1,
+      "valor": 600.0
+    },
+    "Choseman 7": {
+      "quantidade": 1,
+      "valor": 600.0
+    },
+    "Terno 15 jean": {
+      "quantidade": 1,
+      "valor": 12800.0
+    }
+  },
+  "formas_pagamento": {
+    "cartao_credito": {
+      "vendas": 103,
+      "valor": 141161.0
+    },
+    "cartao_debito": {
+      "vendas": 20,
+      "valor": 21500.0
+    },
+    "pendente_caixa": {
+      "vendas": 9,
+      "valor": 11700.0
+    },
+    "pix": {
+      "vendas": 13,
+      "valor": 13649.970000000001
+    }
+  },
+  "detalhes_vendas": [
+    {
+      "id": "a8bb954e-fb0e-4c16-b79f-19f006b68ec9",
+      "numero_venda": "TAT-1764428649605",
+      "vendedor_nome": "Kauan",
+      "valor_total": 600.0,
+      "valor_final": 600.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Lucas Guedes ",
+      "cliente_telefone": "11941813370",
+      "data_venda": "2025-11-29 15:04:10.040335",
+      "cliente_cidade": null,
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "c79b2f71-26c5-456b-ad94-a06a56dd347b",
+      "numero_venda": "TAT-1764429414159",
+      "vendedor_nome": "Daniel",
+      "valor_total": 1799.97,
+      "valor_final": 1799.97,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Emerson Macedo ",
+      "cliente_telefone": "11 94785-9770",
+      "data_venda": "2025-11-29 15:16:54.816973",
+      "cliente_cidade": "Jucelino ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "156b4eb6-58c8-4af8-b8a4-168c18d9b742",
+      "numero_venda": "TAT-1764429335841",
+      "vendedor_nome": "Kauan",
+      "valor_total": 200.0,
+      "valor_final": 200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Lucas Guedes ",
+      "cliente_telefone": "11941813370",
+      "data_venda": "2025-11-29 15:15:36.144255",
+      "cliente_cidade": null,
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "5953d012-8d41-447b-8a8a-e01f4a38fcf0",
+      "numero_venda": "TAT-1764429688285",
+      "vendedor_nome": "Tales",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_debito",
+      "status": "pendente",
+      "cliente_nome": "Wellington Goncalves",
+      "cliente_telefone": "11 9 3803-0262",
+      "data_venda": "2025-11-29 15:21:28.675419",
+      "cliente_cidade": "Diadema ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "6bbbfe3d-a64f-4339-8566-11c6ff1756fa",
+      "numero_venda": "TAT-1764430326742",
+      "vendedor_nome": "Jean",
+      "valor_total": 600.0,
+      "valor_final": 600.0,
+      "forma_pagamento": "pendente_caixa",
+      "status": "pendente",
+      "cliente_nome": "Daniel da Rocha ",
+      "cliente_telefone": "11998751946",
+      "data_venda": "2025-11-29 15:32:06.994542",
+      "cliente_cidade": "Guarulhos",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "16f31350-6bef-4334-a35d-1024ec3f6233",
+      "numero_venda": "TAT-1764421597004",
+      "vendedor_nome": "Gabriel",
+      "valor_total": 1199.98,
+      "valor_final": 1199.98,
+      "forma_pagamento": "pix",
+      "status": "pendente",
+      "cliente_nome": "Daniel Bras",
+      "cliente_telefone": null,
+      "data_venda": "2025-11-29 13:06:37.892815",
+      "cliente_cidade": "Bragança Paulista ",
+      "onde_conheceu": "whatsapp"
+    },
+    {
+      "id": "cef25273-9e1f-4da8-8cfb-5963343efe95",
+      "numero_venda": "TAT-1764422204806",
+      "vendedor_nome": "Gabriel",
+      "valor_total": 599.99,
+      "valor_final": 599.99,
+      "forma_pagamento": "pix",
+      "status": "pendente",
+      "cliente_nome": "Guilherme",
+      "cliente_telefone": "11932280933",
+      "data_venda": "2025-11-29 13:16:45.220844",
+      "cliente_cidade": "Itaqua",
+      "onde_conheceu": "whatsapp"
+    },
+    {
+      "id": "96cf7158-d3e8-4afb-ba7f-734e99510d75",
+      "numero_venda": "TAT-1764422112262",
+      "vendedor_nome": "Gabriel",
+      "valor_total": 599.99,
+      "valor_final": 599.99,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Vitor hugo",
+      "cliente_telefone": "19994229673",
+      "data_venda": "2025-11-29 13:15:12.498870",
+      "cliente_cidade": "Campinas",
+      "onde_conheceu": "whatsapp"
+    },
+    {
+      "id": "de0f36b3-0f86-4886-b681-1bfaf7cead1c",
+      "numero_venda": "TAT-1764429186746",
+      "vendedor_nome": "Jean",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Jaime pereira",
+      "cliente_telefone": "11998186435",
+      "data_venda": "2025-11-29 15:13:07.127267",
+      "cliente_cidade": "Mooca ",
+      "onde_conheceu": "whatsapp"
+    },
+    {
+      "id": "d8c244e4-d467-4390-be6e-caf3003554ca",
+      "numero_venda": "TAT-1764430397578",
+      "vendedor_nome": "Jean",
+      "valor_total": 3300.0,
+      "valor_final": 3300.0,
+      "forma_pagamento": "pendente_caixa",
+      "status": "pendente",
+      "cliente_nome": "Daniel da Rocha ",
+      "cliente_telefone": "11998751946",
+      "data_venda": "2025-11-29 15:33:17.866932",
+      "cliente_cidade": "Guarulhos ",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "8a0658f9-d5d1-4d99-9f3d-d15bd68488ea",
+      "numero_venda": "TAT-1764429401666",
+      "vendedor_nome": "Divino",
+      "valor_total": 2400.0,
+      "valor_final": 2400.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Lucas Vitorino / Roberto ",
+      "cliente_telefone": "11 986801169",
+      "data_venda": "2025-11-29 15:16:42.036068",
+      "cliente_cidade": "são paulo",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "37ccb3c4-43b4-4e84-85b0-4a9aeb59226a",
+      "numero_venda": "TAT-1764429650521",
+      "vendedor_nome": "Divino",
+      "valor_total": 1500.0,
+      "valor_final": 1500.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Gabriel José ",
+      "cliente_telefone": "11 947094443",
+      "data_venda": "2025-11-29 15:20:52.402379",
+      "cliente_cidade": "ferraz da cruzes",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "f49c5aff-5a2c-438e-a4ca-a4e13fbfc7f5",
+      "numero_venda": "TAT-1764430251868",
+      "vendedor_nome": "Daniel",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Ednaldo Alves ",
+      "cliente_telefone": "11989825332",
+      "data_venda": "2025-11-29 15:30:52.958716",
+      "cliente_cidade": "Osasco ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "99226d4b-1f30-4a86-8a80-bb9754cee4d8",
+      "numero_venda": "TAT-1764430303593",
+      "vendedor_nome": "Thales",
+      "valor_total": 1500.0,
+      "valor_final": 1500.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "SILVIO ESPERANÇA ",
+      "cliente_telefone": "11981078341",
+      "data_venda": "2025-11-29 15:31:44.537763",
+      "cliente_cidade": null,
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "c5a9a0d3-526a-47c5-a572-ca0cb908700a",
+      "numero_venda": "TAT-1764430658701",
+      "vendedor_nome": "Thales",
+      "valor_total": 900.0,
+      "valor_final": 900.0,
+      "forma_pagamento": "pendente_caixa",
+      "status": "pendente",
+      "cliente_nome": "Gabriel Miranda ",
+      "cliente_telefone": null,
+      "data_venda": "2025-11-29 15:37:39.616102",
+      "cliente_cidade": null,
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "a47e0ae6-49bc-4b51-b67a-eed50ee3d666",
+      "numero_venda": "TAT-1764430542827",
+      "vendedor_nome": "Gabriel",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Richard Souza ",
+      "cliente_telefone": "11953299320",
+      "data_venda": "2025-11-29 15:35:43.594450",
+      "cliente_cidade": "Itaquá ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "505146ab-f844-495c-9349-59b12e7701f6",
+      "numero_venda": "TAT-1764429672414",
+      "vendedor_nome": "Jhonatas",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Guilherme pessoa ",
+      "cliente_telefone": "11 968799599",
+      "data_venda": "2025-11-29 15:21:13.270997",
+      "cliente_cidade": "Osasco ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "72fed16e-cd35-4c53-9168-27409318fe3e",
+      "numero_venda": "TAT-1764430576864",
+      "vendedor_nome": "Jhonatas",
+      "valor_total": 600.0,
+      "valor_final": 600.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Pessoa Guilherme ",
+      "cliente_telefone": "11 968799599",
+      "data_venda": "2025-11-29 15:36:17.874009",
+      "cliente_cidade": "Osasco ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "3fcbbc76-ca3d-4178-9242-052a1d6e20d3",
+      "numero_venda": "TAT-1764430690200",
+      "vendedor_nome": "Kauan",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Heber silvestre ",
+      "cliente_telefone": "11975450985",
+      "data_venda": "2025-11-29 15:38:11.033410",
+      "cliente_cidade": "São Paulo ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "c2922832-769d-4dce-8c01-12b3e0e73050",
+      "numero_venda": "TAT-1764430591388",
+      "vendedor_nome": "Daniel",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Urias Bueno ",
+      "cliente_telefone": "956590885",
+      "data_venda": "2025-11-29 15:36:31.808022",
+      "cliente_cidade": "Mariporã ",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "e60401d3-53bf-480c-bb20-6a61bea49642",
+      "numero_venda": "TAT-1764430777005",
+      "vendedor_nome": "Jhonatas",
+      "valor_total": 1500.0,
+      "valor_final": 1500.0,
+      "forma_pagamento": "cartao_debito",
+      "status": "pendente",
+      "cliente_nome": "Wellington Carneiro 46 ",
+      "cliente_telefone": "11 949014700",
+      "data_venda": "2025-11-29 15:39:37.624568",
+      "cliente_cidade": "SP",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "c733c471-740e-452b-8916-0b4f86823e94",
+      "numero_venda": "TAT-1764430749690",
+      "vendedor_nome": "Daniel",
+      "valor_total": 100.0,
+      "valor_final": 100.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Urias ",
+      "cliente_telefone": "0",
+      "data_venda": "2025-11-29 15:39:10.278527",
+      "cliente_cidade": "0",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "3c206a31-d8cb-47a5-b274-be5f372a08db",
+      "numero_venda": "TAT-1764430289818",
+      "vendedor_nome": "Gabriel",
+      "valor_total": 600.0,
+      "valor_final": 600.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Jacson murta",
+      "cliente_telefone": "11994109507",
+      "data_venda": "2025-11-29 15:31:30.783026",
+      "cliente_cidade": "São Paulo ",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "319ffa57-d0b8-40fa-9f04-820629b93c27",
+      "numero_venda": "TAT-1764431566309",
+      "vendedor_nome": "Divino",
+      "valor_total": 600.0,
+      "valor_final": 600.0,
+      "forma_pagamento": "cartao_debito",
+      "status": "pendente",
+      "cliente_nome": "Carlos Henrique da Silva Farias ",
+      "cliente_telefone": "11 983439825",
+      "data_venda": "2025-11-29 15:52:46.833576",
+      "cliente_cidade": "Sao Bernardo da campos ",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "e829ae4f-635a-413f-8db0-d7bb85e04fa0",
+      "numero_venda": "TAT-1764431526041",
+      "vendedor_nome": "Kauan",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Liborio ",
+      "cliente_telefone": "11975414185",
+      "data_venda": "2025-11-29 15:53:21.766912",
+      "cliente_cidade": "Nordeste ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "26f85bf4-b875-481d-b457-65b702d37bf3",
+      "numero_venda": "TAT-1764431637149",
+      "vendedor_nome": "Divino",
+      "valor_total": 900.0,
+      "valor_final": 900.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Franciele Dias ",
+      "cliente_telefone": "11 983077476",
+      "data_venda": "2025-11-29 15:53:58.009600",
+      "cliente_cidade": "são paulo",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "bf778838-5a33-495a-bfc2-7da2ce03ae95",
+      "numero_venda": "TAT-1764431653673",
+      "vendedor_nome": "Kauan",
+      "valor_total": 600.0,
+      "valor_final": 600.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Jonas Matheus ",
+      "cliente_telefone": "11957370714",
+      "data_venda": "2025-11-29 15:54:13.792448",
+      "cliente_cidade": null,
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "74814850-ff8d-49fd-a272-16d662647410",
+      "numero_venda": "TAT-1764429680155",
+      "vendedor_nome": "Gabriel",
+      "valor_total": 600.0,
+      "valor_final": 600.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Lucas de Araújo ",
+      "cliente_telefone": "11976613756",
+      "data_venda": "2025-11-29 15:21:21.073875",
+      "cliente_cidade": "São Paulo ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "849029a9-05a3-4213-9493-f1fee59ee85a",
+      "numero_venda": "TAT-1764430835220",
+      "vendedor_nome": "Gabriel",
+      "valor_total": 600.0,
+      "valor_final": 600.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Adrian Ferreira ",
+      "cliente_telefone": "17988019569",
+      "data_venda": "2025-11-29 15:40:35.923815",
+      "cliente_cidade": "Ariranha ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "54517d7b-58c4-4a90-ae83-e5f0245389d1",
+      "numero_venda": "TAT-1764431564677",
+      "vendedor_nome": "Gabriel",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Guilherme Domingos ",
+      "cliente_telefone": "11948868314",
+      "data_venda": "2025-11-29 15:52:44.921450",
+      "cliente_cidade": null,
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "698cceec-3da7-4c6e-9aa7-457ff53768b9",
+      "numero_venda": "TAT-1764431665069",
+      "vendedor_nome": "Gabriel",
+      "valor_total": 100.0,
+      "valor_final": 100.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Ricardo Kleber ",
+      "cliente_telefone": "61998321297",
+      "data_venda": "2025-11-29 15:54:25.732038",
+      "cliente_cidade": "Distrito federal ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "d3a3db07-3a32-4e9d-927a-7480c3ab9d85",
+      "numero_venda": "TAT-1764430187629",
+      "vendedor_nome": "Jean",
+      "valor_total": 600.0,
+      "valor_final": 600.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Pedro Soares ",
+      "cliente_telefone": "11977390341",
+      "data_venda": "2025-11-29 15:29:48.067743",
+      "cliente_cidade": "Suzano ",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "24c275bc-3092-4774-b97b-fb4723dcfe39",
+      "numero_venda": "TAT-1764432134802",
+      "vendedor_nome": "Gabriel",
+      "valor_total": 900.0,
+      "valor_final": 900.0,
+      "forma_pagamento": "pendente_caixa",
+      "status": "pendente",
+      "cliente_nome": "Nicolas assis",
+      "cliente_telefone": "11964933946",
+      "data_venda": "2025-11-29 16:02:15.265553",
+      "cliente_cidade": "São Raque",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "68b2c9ca-670e-44e0-8793-8b51166577fc",
+      "numero_venda": "TAT-1764431807447",
+      "vendedor_nome": "Jhonatas",
+      "valor_total": 700.0,
+      "valor_final": 700.0,
+      "forma_pagamento": "pix",
+      "status": "pendente",
+      "cliente_nome": "Mateus Nascimento ",
+      "cliente_telefone": "11953527338",
+      "data_venda": "2025-11-29 15:56:47.866854",
+      "cliente_cidade": "Mauá ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "722a93de-eb32-44b2-8689-1801492ee7a0",
+      "numero_venda": "TAT-1764431972005",
+      "vendedor_nome": "Breno",
+      "valor_total": 2400.0,
+      "valor_final": 2400.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Paulo Henrique ",
+      "cliente_telefone": "11985382346",
+      "data_venda": "2025-11-29 15:59:33.494776",
+      "cliente_cidade": "São paulo ",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "0a9ae8bf-9171-4264-b328-dfbb83e73a03",
+      "numero_venda": "TAT-1764430750942",
+      "vendedor_nome": "Daniel",
+      "valor_total": 100.0,
+      "valor_final": 850.0,
+      "forma_pagamento": "pix",
+      "status": "pendente",
+      "cliente_nome": "Urias ",
+      "cliente_telefone": "0",
+      "data_venda": "2025-11-29 15:39:11.066808",
+      "cliente_cidade": "0",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "10e93ef2-9c96-49bc-a444-735c26a37d31",
+      "numero_venda": "TAT-1764432402958",
+      "vendedor_nome": "Tales",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_debito",
+      "status": "pendente",
+      "cliente_nome": "Gustavo Gonçalves ",
+      "cliente_telefone": "11943374362",
+      "data_venda": "2025-11-29 16:06:43.220056",
+      "cliente_cidade": null,
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "41281e8a-4a9a-46b2-856e-0b86bf2b7dd9",
+      "numero_venda": "TAT-1764433273087",
+      "vendedor_nome": "Gabriel",
+      "valor_total": 600.0,
+      "valor_final": 600.0,
+      "forma_pagamento": "pendente_caixa",
+      "status": "pendente",
+      "cliente_nome": "Onadir de assis",
+      "cliente_telefone": "11995384010",
+      "data_venda": "2025-11-29 16:21:13.630389",
+      "cliente_cidade": "São roque",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "b4e4d790-034d-43f1-8b53-55d40c089753",
+      "numero_venda": "TAT-1764432448614",
+      "vendedor_nome": "Jhonatas",
+      "valor_total": 700.0,
+      "valor_final": 700.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Davi Guimarães ",
+      "cliente_telefone": "11 974263305",
+      "data_venda": "2025-11-29 16:07:29.144501",
+      "cliente_cidade": "Mauá ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "b8521127-8607-4c15-b0bf-0db734733258",
+      "numero_venda": "TAT-1764432414317",
+      "vendedor_nome": "Kauan",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Matheus Camilo ",
+      "cliente_telefone": "11961328031",
+      "data_venda": "2025-11-29 16:06:54.713596",
+      "cliente_cidade": "São Paulo ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "f1956dc8-3a28-4773-9523-aad7f6c4c581",
+      "numero_venda": "TAT-1764432621715",
+      "vendedor_nome": "Kauan",
+      "valor_total": 600.0,
+      "valor_final": 600.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Danilo Alves",
+      "cliente_telefone": "11965747580",
+      "data_venda": "2025-11-29 16:10:21.962090",
+      "cliente_cidade": "Carapicuíba ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "7e343e86-932f-4aab-a796-d6527a0f23e5",
+      "numero_venda": "TAT-1764432726214",
+      "vendedor_nome": "Jean",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Luciano Dionizio ",
+      "cliente_telefone": "11953211899",
+      "data_venda": "2025-11-29 16:12:06.644796",
+      "cliente_cidade": "Pinhalzinho",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "936979ee-3bee-4817-9036-ce2cd6bf5aeb",
+      "numero_venda": "TAT-1764431629947",
+      "vendedor_nome": "Jean",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Nathan Pierre ",
+      "cliente_telefone": "11968445815",
+      "data_venda": "2025-11-29 15:53:50.083253",
+      "cliente_cidade": "Pinhalzinho ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "8183a20b-86fd-4a94-b872-4337f0e57ed0",
+      "numero_venda": "TAT-1764432881408",
+      "vendedor_nome": "Divino",
+      "valor_total": 1500.0,
+      "valor_final": 1500.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Lucas Paulo",
+      "cliente_telefone": "11 967780135",
+      "data_venda": "2025-11-29 16:14:43.372869",
+      "cliente_cidade": "santo André ",
+      "onde_conheceu": "amigos"
+    },
+    {
+      "id": "0378aaa7-efd6-43cf-b387-2437a01da1c8",
+      "numero_venda": "TAT-1764431628267",
+      "vendedor_nome": "Jean",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Nathan Pierre ",
+      "cliente_telefone": "11968445815",
+      "data_venda": "2025-11-29 15:53:48.644740",
+      "cliente_cidade": "Pinhalzinho ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "aa87eeb4-c4f3-4134-8c35-16797ba77b9a",
+      "numero_venda": "TAT-1764433128908",
+      "vendedor_nome": "Thales",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Willian Dias",
+      "cliente_telefone": null,
+      "data_venda": "2025-11-29 16:18:51.035752",
+      "cliente_cidade": null,
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "e60c5ccc-464f-416e-ad28-d9e37aa36a0f",
+      "numero_venda": "TAT-1764433397522",
+      "vendedor_nome": "Kauan",
+      "valor_total": 1200.0,
+      "valor_final": 1200.0,
+      "forma_pagamento": "cartao_debito",
+      "status": "pendente",
+      "cliente_nome": "Francisco rufino ",
+      "cliente_telefone": "11991532368",
+      "data_venda": "2025-11-29 16:23:17.774581",
+      "cliente_cidade": "São Paulo ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "a9021902-cdb9-4032-920e-60161fc273f7",
+      "numero_venda": "TAT-1764433478649",
+      "vendedor_nome": "Thales",
+      "valor_total": 700.0,
+      "valor_final": 700.0,
+      "forma_pagamento": "pix",
+      "status": "pendente",
+      "cliente_nome": "Daniel Kalaf ",
+      "cliente_telefone": null,
+      "data_venda": "2025-11-29 16:24:39.417755",
+      "cliente_cidade": null,
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "831bdba4-7564-4e2e-8826-eb048b3997ae",
+      "numero_venda": "TAT-1764433853651",
+      "vendedor_nome": "Tales",
+      "valor_total": 600.0,
+      "valor_final": 600.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "Caio Cesar ",
+      "cliente_telefone": "11957171543",
+      "data_venda": "2025-11-29 16:30:54.141354",
+      "cliente_cidade": "guarulhos ",
+      "onde_conheceu": "instagram"
+    },
+    {
+      "id": "08d6bf0b-8d2a-4bb9-b55d-806419d24951",
+      "numero_venda": "TAT-1764434012151",
+      "vendedor_nome": "Divino",
+      "valor_total": 600.0,
+      "valor_final": 600.0,
+      "forma_pagamento": "cartao_credito",
+      "status": "pendente",
+      "cliente_nome": "izak junior",
+      "cliente_telefone": "11 998450046",
+      "data_venda": "2025-11-29 16:33:33.488472",
+      "cliente_cidade": "pinhalzinho",
+      "onde_conheceu": "amigos"
+    }
+  ]
+}

@@ -5,6 +5,11 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../utils/supabase';
 import * as XLSX from 'xlsx';
+import GerenciarFotosVendedores from './GerenciarFotosVendedores';
+import GeradorQRCode from './GeradorQRCode';
+import GeradorQRCodeLote from './GeradorQRCodeLote';
+import RelatorioBlackFriday from './RelatorioBlackFriday';
+import TrocarSenhaUsuarios from '../../ferramentas/TrocarSenhaUsuarios';
 
 // MESMOS ESTILOS DO SISTEMA PRINCIPAL
 const Container = styled.div`
@@ -452,6 +457,8 @@ export default function Gerente({ user, onLogout }) {
   const [categorias, setCategorias] = useState(['terno', 'camisa', 'gravata', 'costume', 'acessorio', 'pre venda', 'Coleção Choseman']);
   const [novaCategoria, setNovaCategoria] = useState('');
   const [showCategoriaModal, setShowCategoriaModal] = useState(false);
+  const [produtoQRCode, setProdutoQRCode] = useState(null);
+  const [showQRCodeLote, setShowQRCodeLote] = useState(false);
   
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -1078,7 +1085,9 @@ export default function Gerente({ user, onLogout }) {
         <Tab $active={activeTab === 'estoque'} onClick={() => setActiveTab('estoque')}>Estoque</Tab>
         <Tab $active={activeTab === 'vendas'} onClick={() => setActiveTab('vendas')}>Vendas</Tab>
         <Tab $active={activeTab === 'metas'} onClick={() => setActiveTab('metas')}>Metas</Tab>
+        <Tab $active={activeTab === 'fotos'} onClick={() => setActiveTab('fotos')}>Fotos</Tab>
         <Tab $active={activeTab === 'relatorios'} onClick={() => setActiveTab('relatorios')}>Relatórios</Tab>
+        <Tab $active={activeTab === 'ferramentas'} onClick={() => setActiveTab('ferramentas')}>Ferramentas</Tab>
       </TabContainer>
 
       <ContentArea>
@@ -1252,7 +1261,33 @@ export default function Gerente({ user, onLogout }) {
                           {index + 1}
                         </div>
                         
-
+                        {/* Foto do vendedor */}
+                        <div style={{
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '50%',
+                          overflow: 'hidden',
+                          border: '2px solid ' + cores[index],
+                          marginBottom: '10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#222'
+                        }}>
+                          {vendedor.foto_url ? (
+                            <img 
+                              src={vendedor.foto_url} 
+                              alt={vendedor.nome}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover'
+                              }}
+                            />
+                          ) : (
+                            <span style={{ fontSize: '1.5rem', color: '#666' }}>👤</span>
+                          )}
+                        </div>
                         
                         <div style={{
                           fontSize: '1.1rem',
@@ -1366,6 +1401,13 @@ export default function Gerente({ user, onLogout }) {
                   style={{fontSize: '12px', padding: '10px 14px'}}
                 >
                   Gerenciar Categorias
+                </ActionButton>
+                <ActionButton 
+                  className="primary" 
+                  onClick={() => setShowQRCodeLote(true)}
+                  style={{fontSize: '12px', padding: '10px 14px'}}
+                >
+                  QR Codes Lote
                 </ActionButton>
                 <select 
                   value={ordenacao}
@@ -1484,12 +1526,21 @@ export default function Gerente({ user, onLogout }) {
                             </DropdownItem>
                             
                             <DropdownItem 
+                              onClick={() => {
+                                setProdutoQRCode(p);
+                                setDropdownAberto(null);
+                              }}
+                            >
+                              Gerar QR Code
+                            </DropdownItem>
+                            
+                            <DropdownItem 
                               className="danger"
                               onClick={() => {
                                 excluirProduto(p.id);
                                 setDropdownAberto(null);
                               }}
-                            >
+            >
                               Excluir Produto
                             </DropdownItem>
                           </DropdownMenu>
@@ -1529,6 +1580,18 @@ export default function Gerente({ user, onLogout }) {
               </tbody>
             </Table>
           </div>
+        )}
+
+        {activeTab === 'fotos' && (
+          <GerenciarFotosVendedores 
+            vendedores={vendedores}
+            onUpdateFoto={(vendedorId, fotoUrl) => {
+              setVendedores(prev => prev.map(v => 
+                v.id === vendedorId ? { ...v, foto_url: fotoUrl } : v
+              ));
+            }}
+            supabase={supabase}
+          />
         )}
 
         {activeTab === 'metas' && (
@@ -1608,6 +1671,35 @@ export default function Gerente({ user, onLogout }) {
                       }}>
                         {index + 1}
                       </div>
+                      
+                      {/* Foto do vendedor no ranking */}
+                      <div style={{
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '50%',
+                        overflow: 'hidden',
+                        border: '2px solid #333',
+                        marginRight: '15px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#222'
+                      }}>
+                        {vendedor.foto_url ? (
+                          <img 
+                            src={vendedor.foto_url} 
+                            alt={vendedor.nome}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover'
+                            }}
+                          />
+                        ) : (
+                          <span style={{ fontSize: '1.2rem', color: '#666' }}>👤</span>
+                        )}
+                      </div>
+                      
                       <div style={{flex: 1}}>
                         <div style={{fontSize: '1rem', fontWeight: 'bold', color: '#fff'}}>
                           {vendedor.nome}
@@ -1872,6 +1964,130 @@ export default function Gerente({ user, onLogout }) {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'ferramentas' && (
+          <div>
+            <div style={{marginBottom: '30px'}}>
+              <h2 style={{margin: 0, color: '#ffffff', marginBottom: '10px'}}>🔧 Ferramentas do Sistema</h2>
+              <p style={{color: '#cccccc'}}>Relatórios especiais e ferramentas avançadas</p>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '20px',
+              marginBottom: '30px'
+            }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                border: '2px solid #ff6b35',
+                borderRadius: '12px',
+                padding: '25px',
+                cursor: 'pointer',
+                transition: 'transform 0.2s ease'
+              }}
+              onClick={() => setActiveTab('blackfriday')}
+              onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
+              onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+              >
+                <div style={{
+                  fontSize: '3rem',
+                  marginBottom: '15px',
+                  textAlign: 'center'
+                }}>📊</div>
+                <h3 style={{
+                  color: '#ff6b35',
+                  marginBottom: '10px',
+                  textAlign: 'center'
+                }}>Relatório por Dia</h3>
+                <p style={{
+                  color: '#cccccc',
+                  textAlign: 'center',
+                  fontSize: '0.9rem'
+                }}>Análise completa das vendas por dia com ranking de vendedores e produtos mais vendidos</p>
+              </div>
+
+              <div style={{
+                background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                border: '2px solid #3b82f6',
+                borderRadius: '12px',
+                padding: '25px',
+                cursor: 'pointer',
+                transition: 'transform 0.2s ease'
+              }}
+              onClick={() => setActiveTab('trocarsenha')}
+              onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
+              onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+              >
+                <div style={{
+                  fontSize: '3rem',
+                  marginBottom: '15px',
+                  textAlign: 'center'
+                }}>🔐</div>
+                <h3 style={{
+                  color: '#3b82f6',
+                  marginBottom: '10px',
+                  textAlign: 'center'
+                }}>Trocar Senha de Usuários</h3>
+                <p style={{
+                  color: '#cccccc',
+                  textAlign: 'center',
+                  fontSize: '0.9rem'
+                }}>Ferramenta para alterar senhas de vendedores, gerentes e outros usuários do sistema</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'blackfriday' && (
+          <div>
+            <div style={{marginBottom: '20px'}}>
+              <button
+                onClick={() => setActiveTab('ferramentas')}
+                style={{
+                  background: '#333',
+                  color: '#fff',
+                  border: '1px solid #555',
+                  borderRadius: '6px',
+                  padding: '10px 15px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                ← Voltar para Ferramentas
+              </button>
+            </div>
+            <RelatorioBlackFriday />
+          </div>
+        )}
+
+        {activeTab === 'trocarsenha' && (
+          <div>
+            <div style={{marginBottom: '20px'}}>
+              <button
+                onClick={() => setActiveTab('ferramentas')}
+                style={{
+                  background: '#333',
+                  color: '#fff',
+                  border: '1px solid #555',
+                  borderRadius: '6px',
+                  padding: '10px 15px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                ← Voltar para Ferramentas
+              </button>
+            </div>
+            <TrocarSenhaUsuarios loja="tatuape" />
           </div>
         )}
       </ContentArea>
@@ -2364,6 +2580,22 @@ export default function Gerente({ user, onLogout }) {
             </div>
           </ModalContent>
         </Modal>
+      )}
+      
+      {/* Modal QR Code */}
+      {produtoQRCode && (
+        <GeradorQRCode 
+          produto={produtoQRCode}
+          onClose={() => setProdutoQRCode(null)}
+        />
+      )}
+      
+      {/* Modal QR Code Lote */}
+      {showQRCodeLote && (
+        <GeradorQRCodeLote 
+          produtos={produtosFiltrados}
+          onClose={() => setShowQRCodeLote(false)}
+        />
       )}
     </Container>
   );

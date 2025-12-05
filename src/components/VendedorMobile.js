@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import VendedorProfile from './VendedorProfile';
+import QRScanner from './QRScannerTest';
+import ModalProdutoAdicionado from './ModalProdutoAdicionado';
+import ModalProdutoNaoEncontrado from './ModalProdutoNaoEncontrado';
+import ModalClienteObrigatorio from './ModalClienteObrigatorio';
 
 export default function VendedorMobile({ user, onLogout }) {
   const { darkMode, toggleTheme } = useTheme();
@@ -25,6 +29,12 @@ export default function VendedorMobile({ user, onLogout }) {
   const [processandoVenda, setProcessandoVenda] = useState(false);
   const [clienteEmStandby, setClienteEmStandby] = useState(null);
   const [cpfJaExiste, setCpfJaExiste] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [produtoAdicionado, setProdutoAdicionado] = useState(null);
+  const [showModalProduto, setShowModalProduto] = useState(false);
+  const [codigoErro, setCodigoErro] = useState('');
+  const [showModalErro, setShowModalErro] = useState(false);
+  const [showModalCliente, setShowModalCliente] = useState(false);
 
   useEffect(() => {
     carregarProdutos();
@@ -140,6 +150,37 @@ export default function VendedorMobile({ user, onLogout }) {
     }
   };
 
+  const handleQRScan = async (data) => {
+    try {
+      setShowQRScanner(false);
+      
+      // Buscar produto pelo código QR
+      const { data: produto, error } = await supabase
+        .from('produtos_tatuape')
+        .select('*')
+        .eq('codigo', data)
+        .eq('ativo', true)
+        .gt('estoque_atual', 0)
+        .single();
+      
+      if (error || !produto) {
+        setCodigoErro(data);
+        setShowModalErro(true);
+        return;
+      }
+      
+      adicionarAoCarrinho(produto);
+      
+      // Mostrar modal customizado
+      setProdutoAdicionado(produto);
+      setShowModalProduto(true);
+      
+    } catch (error) {
+      console.error('Erro ao processar QR code:', error);
+      alert('Erro ao processar QR code');
+    }
+  };
+
   const alterarQuantidade = (produtoId, novaQuantidade) => {
     if (novaQuantidade <= 0) {
       setCarrinho(carrinho.filter(item => item.id !== produtoId));
@@ -168,7 +209,7 @@ export default function VendedorMobile({ user, onLogout }) {
     }
 
     if (!clienteNome.trim()) {
-      alert('Nome do cliente é obrigatório');
+      setShowModalCliente(true);
       return;
     }
 
@@ -342,7 +383,7 @@ export default function VendedorMobile({ user, onLogout }) {
     }
 
     if (!clienteNome.trim()) {
-      alert('Nome do cliente é obrigatório');
+      setShowModalCliente(true);
       return;
     }
 
@@ -582,32 +623,55 @@ export default function VendedorMobile({ user, onLogout }) {
       <div style={{ flex: 1, padding: '1rem', paddingBottom: '5rem' }}>
         {activeTab === 'produtos' && (
           <>
-            {/* BUSCA */}
-            <div style={{ position: 'relative', marginBottom: '1rem' }}>
-              <div style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: darkMode ? '#888' : '#666',
-                fontSize: '1rem'
-              }}>
-                🔍
+            {/* BUSCA E QR SCANNER */}
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ position: 'relative', marginBottom: '0.5rem' }}>
+                <div style={{
+                  position: 'absolute',
+                  left: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: darkMode ? '#888' : '#666',
+                  fontSize: '1rem'
+                }}>
+                  🔍
+                </div>
+                <input
+                  placeholder="Buscar produto..."
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 12px 12px 35px',
+                    background: darkMode ? '#2a2a2a' : '#f8f9fa',
+                    border: `2px solid ${busca ? '#3b82f6' : (darkMode ? '#333' : '#e5e7eb')}`,
+                    borderRadius: '8px',
+                    color: darkMode ? '#ffffff' : '#000000',
+                    fontSize: '16px'
+                  }}
+                />
               </div>
-              <input
-                placeholder="Buscar produto..."
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
+              
+              <button
+                onClick={() => setShowQRScanner(true)}
                 style={{
                   width: '100%',
-                  padding: '12px 12px 12px 35px',
-                  background: darkMode ? '#2a2a2a' : '#f8f9fa',
-                  border: `2px solid ${busca ? '#3b82f6' : (darkMode ? '#333' : '#e5e7eb')}`,
+                  padding: '12px',
+                  background: '#10b981',
+                  color: '#ffffff',
+                  border: 'none',
                   borderRadius: '8px',
-                  color: darkMode ? '#ffffff' : '#000000',
-                  fontSize: '16px'
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
                 }}
-              />
+              >
+                📱 Escanear QR Code
+              </button>
             </div>
             
             {/* FILTROS */}
@@ -1131,6 +1195,47 @@ export default function VendedorMobile({ user, onLogout }) {
           </div>
         </div>
       )}
+      
+      <QRScanner 
+        isOpen={showQRScanner}
+        onScan={handleQRScan}
+        onClose={() => setShowQRScanner(false)}
+      />
+      
+      <ModalProdutoAdicionado
+        produto={produtoAdicionado}
+        isOpen={showModalProduto}
+        onContinuar={() => {
+          setShowModalProduto(false);
+          setShowQRScanner(true);
+        }}
+        onFechar={() => {
+          setShowModalProduto(false);
+          setProdutoAdicionado(null);
+        }}
+      />
+      
+      <ModalProdutoNaoEncontrado
+        isOpen={showModalErro}
+        codigo={codigoErro}
+        onTentarNovamente={() => {
+          setShowModalErro(false);
+          setShowQRScanner(true);
+        }}
+        onFechar={() => {
+          setShowModalErro(false);
+          setCodigoErro('');
+        }}
+      />
+      
+      <ModalClienteObrigatorio
+        isOpen={showModalCliente}
+        onIrParaCliente={() => {
+          setShowModalCliente(false);
+          setActiveTab('cliente');
+        }}
+        onFechar={() => setShowModalCliente(false)}
+      />
     </div>
   );
 }
