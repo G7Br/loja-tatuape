@@ -147,6 +147,11 @@ export default function VendedorMogi({ user, onLogout }) {
       return;
     }
 
+    if (!cliente.telefone.trim()) {
+      alert('Telefone do cliente é obrigatório!');
+      return;
+    }
+
     try {
       const numeroVenda = `MOG-${Date.now()}`;
       const valorTotal = carrinho.reduce((sum, item) => sum + (item.preco_venda * item.quantidade), 0);
@@ -266,7 +271,7 @@ export default function VendedorMogi({ user, onLogout }) {
             />
             <input
               type="tel"
-              placeholder="Telefone"
+              placeholder="Telefone *"
               value={cliente.telefone}
               onChange={(e) => setCliente({...cliente, telefone: e.target.value})}
               style={{
@@ -287,7 +292,7 @@ export default function VendedorMogi({ user, onLogout }) {
           <Button
             variant="success"
             onClick={finalizarVenda}
-            disabled={carrinho.length === 0 || !cliente.nome_completo.trim()}
+            disabled={carrinho.length === 0 || !cliente.nome_completo.trim() || !cliente.telefone.trim()}
           >
             ✅ Finalizar Venda ({carrinho.length} itens)
           </Button>

@@ -213,6 +213,11 @@ export default function VendedorMobile({ user, onLogout }) {
       return;
     }
 
+    if (!clienteTelefone.trim()) {
+      alert('Telefone do cliente é obrigatório!');
+      return;
+    }
+
     try {
       // Cadastrar cliente
       await cadastrarCliente({
@@ -384,6 +389,11 @@ export default function VendedorMobile({ user, onLogout }) {
 
     if (!clienteNome.trim()) {
       setShowModalCliente(true);
+      return;
+    }
+
+    if (!clienteTelefone.trim()) {
+      alert('Telefone do cliente é obrigatório!');
       return;
     }
 
@@ -915,7 +925,7 @@ export default function VendedorMobile({ user, onLogout }) {
               }}
             />
             <input
-              placeholder="Telefone (opcional)"
+              placeholder="Telefone *"
               value={clienteTelefone}
               onChange={async (e) => {
                 setClienteTelefone(e.target.value);
@@ -1166,27 +1176,27 @@ export default function VendedorMobile({ user, onLogout }) {
             </div>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={enviarParaStandby} disabled={clienteEmStandby || cpfJaExiste || processandoVenda} style={{
+            <button onClick={enviarParaStandby} disabled={clienteEmStandby || cpfJaExiste || processandoVenda || !clienteTelefone.trim()} style={{
               flex: 1,
               padding: '12px 16px',
-              background: (clienteEmStandby || cpfJaExiste || processandoVenda) ? '#666' : '#f59e0b',
+              background: (clienteEmStandby || cpfJaExiste || processandoVenda || !clienteTelefone.trim()) ? '#666' : '#f59e0b',
               color: '#ffffff',
               border: 'none',
               borderRadius: '8px',
-              cursor: (clienteEmStandby || cpfJaExiste || processandoVenda) ? 'not-allowed' : 'pointer',
+              cursor: (clienteEmStandby || cpfJaExiste || processandoVenda || !clienteTelefone.trim()) ? 'not-allowed' : 'pointer',
               fontWeight: '600',
               fontSize: '0.9rem'
             }}>
               Standby
             </button>
-            <button onClick={finalizarVenda} disabled={clienteEmStandby || processandoVenda} style={{
+            <button onClick={finalizarVenda} disabled={clienteEmStandby || processandoVenda || !clienteTelefone.trim()} style={{
               flex: 1,
               padding: '12px 16px',
-              background: (clienteEmStandby || processandoVenda) ? '#666' : '#10b981',
+              background: (clienteEmStandby || processandoVenda || !clienteTelefone.trim()) ? '#666' : '#10b981',
               color: '#ffffff',
               border: 'none',
               borderRadius: '8px',
-              cursor: (clienteEmStandby || processandoVenda) ? 'not-allowed' : 'pointer',
+              cursor: (clienteEmStandby || processandoVenda || !clienteTelefone.trim()) ? 'not-allowed' : 'pointer',
               fontWeight: '600',
               fontSize: '0.9rem'
             }}>
