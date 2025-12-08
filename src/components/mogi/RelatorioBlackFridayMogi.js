@@ -230,6 +230,12 @@ export default function RelatorioBlackFridayMogi() {
 
       if (vendasError) throw vendasError;
 
+      // Buscar dados dos vendedores (incluindo fotos)
+      const { data: vendedoresData } = await supabase
+        .from('usuarios_mogi')
+        .select('nome, foto_url')
+        .eq('tipo', 'vendedor');
+
       // Calcular métricas
       const totalVendas = vendas.length;
       const valorTotal = vendas.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0);
@@ -243,11 +249,14 @@ export default function RelatorioBlackFridayMogi() {
       vendas.forEach(venda => {
         const vendedor = venda.vendedor_nome || 'Sem vendedor';
         if (!vendedoresMap[vendedor]) {
+          // Buscar foto do vendedor
+          const vendedorInfo = vendedoresData?.find(v => v.nome === vendedor);
           vendedoresMap[vendedor] = {
             nome: vendedor,
             vendas: 0,
             valor: 0,
-            itens: 0
+            itens: 0,
+            foto_url: vendedorInfo?.foto_url || null
           };
         }
         vendedoresMap[vendedor].vendas++;
@@ -390,6 +399,43 @@ export default function RelatorioBlackFridayMogi() {
         {dados.rankingVendedores.map((vendedor, index) => (
           <RankingCard key={vendedor.nome} position={index + 1}>
             <Position position={index + 1}>{index + 1}º</Position>
+            
+            {/* Foto do vendedor */}
+            <div style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              overflow: 'hidden',
+              border: '2px solid #000000',
+              marginRight: '15px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: '#f5f5f5',
+              flexShrink: 0
+            }}>
+              {vendedor.foto_url ? (
+                <img 
+                  src={vendedor.foto_url} 
+                  alt={vendedor.nome}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <span style={{ 
+                fontSize: '1.5rem', 
+                color: '#666',
+                display: vendedor.foto_url ? 'none' : 'flex'
+              }}>👤</span>
+            </div>
+            
             <VendedorInfo>
               <VendedorNome>{vendedor.nome}</VendedorNome>
               <VendedorStats>

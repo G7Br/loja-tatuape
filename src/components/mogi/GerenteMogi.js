@@ -2845,7 +2845,7 @@ export default function Gerente({ user, onLogout }) {
         </head>
         <body>
           <div class="header">
-            <div class="logo">VH ALFAIATARIA - MOGI DAS CRUZES</div>
+            <img src="/images/relatorio logo.png" alt="Logo" style="height: 120px; margin-bottom: 5px;" />
             <div style="font-size: 12pt; margin-bottom: 2mm;">RELATÓRIO GERENCIAL COMPLETO</div>
             <div style="font-size: 9pt; color: #666;">Gerado em ${dataFormatada} às ${horaFormatada}</div>
           </div>
