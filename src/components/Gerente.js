@@ -11,6 +11,7 @@ import GeradorQRCodeLote from './GeradorQRCodeLote';
 import RelatorioBlackFriday from './RelatorioBlackFriday';
 import TrocarSenhaUsuarios from '../../ferramentas/TrocarSenhaUsuarios';
 
+
 // MESMOS ESTILOS DO SISTEMA PRINCIPAL
 const Container = styled.div`
   width: 100%;
@@ -2037,6 +2038,8 @@ export default function Gerente({ user, onLogout }) {
                   fontSize: '0.9rem'
                 }}>Ferramenta para alterar senhas de vendedores, gerentes e outros usuários do sistema</p>
               </div>
+
+
             </div>
           </div>
         )}
@@ -2090,6 +2093,8 @@ export default function Gerente({ user, onLogout }) {
             <TrocarSenhaUsuarios loja="tatuape" />
           </div>
         )}
+
+
       </ContentArea>
       
       {/* Modal para Alterar Preço */}
