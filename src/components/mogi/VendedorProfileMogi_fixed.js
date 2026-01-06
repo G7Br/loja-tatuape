@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabaseMogi } from '../../utils/supabaseMogi';
+import { supabase } from '../../utils/supabase';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export default function VendedorProfileMogi({ user, onBack }) {
@@ -21,44 +21,28 @@ export default function VendedorProfileMogi({ user, onBack }) {
     try {
       const hoje = new Date();
       const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-      const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+      const inicioDia = new Date();
+      inicioDia.setHours(0, 0, 0, 0);
 
-      // Vendas do mês
-      const { data: vendasMes } = await supabaseMogi
+      console.log('🔍 Carregando estatísticas para:', user.nome);
+
+      // Vendas do mês (NÃO canceladas)
+      const { data: vendasMes } = await supabase
         .from('vendas_mogi')
-        .select('valor_final')
+        .select('valor_final, forma_pagamento, status')
         .eq('vendedor_nome', user.nome)
         .gte('data_venda', inicioMes.toISOString())
-        .neq('forma_pagamento', 'pendente_caixa');
+        .neq('forma_pagamento', 'pendente_caixa')
+        .neq('status', 'cancelada');
 
-      // Vendas de hoje
-      const { data: vendasHoje } = await supabaseMogi
+      // Vendas de hoje (NÃO canceladas)  
+      const { data: vendasHoje } = await supabase
         .from('vendas_mogi')
-        .select('valor_final')
+        .select('valor_final, forma_pagamento, status')
         .eq('vendedor_nome', user.nome)
         .gte('data_venda', inicioDia.toISOString())
-        .neq('forma_pagamento', 'pendente_caixa');
-
-      // Produtos mais vendidos - simplificado
-      const { data: itensVendidos } = await supabaseMogi
-        .from('itens_venda_mogi')
-        .select('produto_nome, quantidade')
-        .gte('created_at', inicioMes.toISOString());
-
-      // Processar produtos mais vendidos
-      const produtosCount = {};
-      itensVendidos?.forEach(item => {
-        if (produtosCount[item.produto_nome]) {
-          produtosCount[item.produto_nome] += item.quantidade;
-        } else {
-          produtosCount[item.produto_nome] = item.quantidade;
-        }
-      });
-
-      const produtosMaisVendidos = Object.entries(produtosCount)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 5)
-        .map(([nome, quantidade]) => ({ nome, quantidade }));
+        .neq('forma_pagamento', 'pendente_caixa')
+        .neq('status', 'cancelada');
 
       const valorMes = vendasMes?.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0) || 0;
       const valorHoje = vendasHoje?.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0) || 0;
@@ -70,7 +54,7 @@ export default function VendedorProfileMogi({ user, onBack }) {
         vendasHoje: vendasHoje?.length || 0,
         valorHoje,
         ticketMedio,
-        produtosMaisVendidos
+        produtosMaisVendidos: []
       });
 
     } catch (error) {
@@ -153,60 +137,58 @@ export default function VendedorProfileMogi({ user, onBack }) {
       </div>
 
       {/* Meta Mensal */}
-      {metaMensal > 0 && (
-        <div style={{
-          background: darkMode ? '#1a1a1a' : '#f8f9fa',
-          border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
-          borderRadius: '1rem',
-          padding: '1.5rem',
-          marginBottom: '2rem'
-        }}>
-          <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.2rem' }}>Meta do Mês</h2>
-          <div style={{ marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <span>Progresso:</span>
-              <span style={{ fontWeight: '600' }}>
-                {formatCurrency(stats.valorMes)} / {formatCurrency(metaMensal)}
-              </span>
-            </div>
-            <div style={{
-              width: '100%',
-              height: '8px',
-              background: darkMode ? '#333' : '#e5e7eb',
-              borderRadius: '4px',
-              overflow: 'hidden'
-            }}>
-              <div style={{
-                height: '100%',
-                background: percentualMeta >= 100 ? '#10b981' : '#3b82f6',
-                width: `${Math.min(percentualMeta, 100)}%`,
-                transition: 'width 0.3s ease'
-              }}></div>
-            </div>
-            <div style={{ 
-              textAlign: 'center', 
-              marginTop: '0.5rem',
-              fontSize: '1.2rem',
-              fontWeight: '700',
-              color: percentualMeta >= 100 ? '#10b981' : '#3b82f6'
-            }}>
-              {percentualMeta.toFixed(1)}%
-            </div>
+      <div style={{
+        background: darkMode ? '#1a1a1a' : '#f8f9fa',
+        border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
+        borderRadius: '1rem',
+        padding: '1.5rem',
+        marginBottom: '2rem'
+      }}>
+        <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.2rem' }}>Meta do Mês</h2>
+        <div style={{ marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+            <span>Progresso:</span>
+            <span style={{ fontWeight: '600' }}>
+              {formatCurrency(stats.valorMes)} / {formatCurrency(metaMensal)}
+            </span>
           </div>
-          {percentualMeta >= 100 && (
+          <div style={{
+            width: '100%',
+            height: '8px',
+            background: darkMode ? '#333' : '#e5e7eb',
+            borderRadius: '4px',
+            overflow: 'hidden'
+          }}>
             <div style={{
-              background: '#10b981',
-              color: 'white',
-              padding: '0.75rem',
-              borderRadius: '0.5rem',
-              textAlign: 'center',
-              fontWeight: '600'
-            }}>
-              🎉 Parabéns! Meta atingida!
-            </div>
-          )}
+              height: '100%',
+              background: percentualMeta >= 100 ? '#10b981' : '#3b82f6',
+              width: `${Math.min(percentualMeta, 100)}%`,
+              transition: 'width 0.3s ease'
+            }}></div>
+          </div>
+          <div style={{ 
+            textAlign: 'center', 
+            marginTop: '0.5rem',
+            fontSize: '1.2rem',
+            fontWeight: '700',
+            color: percentualMeta >= 100 ? '#10b981' : '#3b82f6'
+          }}>
+            {percentualMeta.toFixed(1)}%
+          </div>
         </div>
-      )}
+        {percentualMeta >= 100 && (
+          <div style={{
+            background: '#10b981',
+            color: 'white',
+            padding: '0.75rem',
+            borderRadius: '0.5rem',
+            textAlign: 'center',
+            fontWeight: '600'
+          }}>
+            🎉 Parabéns! Meta atingida!
+          </div>
+        )}
+      </div>
 
       {/* Estatísticas */}
       <div style={{
@@ -271,64 +253,6 @@ export default function VendedorProfileMogi({ user, onBack }) {
           <div style={{ fontSize: '0.9rem', color: '#888' }}>Ticket Médio</div>
         </div>
       </div>
-
-      {/* Produtos Mais Vendidos */}
-      {stats.produtosMaisVendidos.length > 0 && (
-        <div style={{
-          background: darkMode ? '#1a1a1a' : '#f8f9fa',
-          border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
-          borderRadius: '1rem',
-          padding: '1.5rem'
-        }}>
-          <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.2rem' }}>
-            🏆 Produtos Mais Vendidos (Este Mês)
-          </h2>
-          <div style={{ display: 'grid', gap: '0.75rem' }}>
-            {stats.produtosMaisVendidos.map((produto, index) => (
-              <div
-                key={produto.nome}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.75rem',
-                  background: darkMode ? '#2a2a2a' : '#ffffff',
-                  border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
-                  borderRadius: '0.5rem'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{
-                    width: '24px',
-                    height: '24px',
-                    background: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : '#CD7F32',
-                    color: '#000',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.8rem',
-                    fontWeight: '700'
-                  }}>
-                    {index + 1}
-                  </div>
-                  <span style={{ fontWeight: '500' }}>{produto.nome}</span>
-                </div>
-                <div style={{
-                  background: '#10b981',
-                  color: 'white',
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '1rem',
-                  fontSize: '0.8rem',
-                  fontWeight: '600'
-                }}>
-                  {produto.quantidade} vendas
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

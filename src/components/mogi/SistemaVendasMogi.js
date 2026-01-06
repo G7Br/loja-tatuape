@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { supabase, queryWithStoreMogi } from '../../utils/supabaseMogi';
+import { supabase, queryWithStore } from '../../utils/supabase';
 import SeletorProdutosMogi from './SeletorProdutosMogi';
 import { createBrasiliaTimestamp } from '../../utils/dateUtils';
 import StoreIndicatorMogi from './StoreIndicatorMogi';
@@ -191,17 +191,17 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
 
   const finalizarVenda = async () => {
     if (!metodoPagamento) {
-      alert('Selecione um método de pagamento!');
+      alert('Selecione um mÃ©todo de pagamento!');
       return;
     }
 
     if (metodoPagamento === 'dinheiro' && valorPago < calcularTotal()) {
-      alert('Valor pago é insuficiente!');
+      alert('Valor pago Ã© insuficiente!');
       return;
     }
 
     if (!cliente.nome_completo.trim()) {
-      alert('Dados do cliente são obrigatórios!');
+      alert('Dados do cliente sÃ£o obrigatÃ³rios!');
       return;
     }
 
@@ -286,10 +286,10 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
           created_at: timestampBrasilia
         }]);
 
-      let mensagem = `✅ Venda finalizada com sucesso!\n\n🧾 Número: ${numeroVenda}\n💰 Total: R$ ${valorTotal.toFixed(2)}`;
+      let mensagem = `âœ… Venda finalizada com sucesso!\n\nðŸ§¾ NÃºmero: ${numeroVenda}\nðŸ’° Total: R$ ${valorTotal.toFixed(2)}`;
       
       if (troco > 0) {
-        mensagem += `\n💵 Pago: R$ ${valorPago.toFixed(2)}\n🔄 Troco: R$ ${troco.toFixed(2)}`;
+        mensagem += `\nðŸ’µ Pago: R$ ${valorPago.toFixed(2)}\nðŸ”„ Troco: R$ ${troco.toFixed(2)}`;
       }
 
       alert(mensagem);
@@ -314,7 +314,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
 
     } catch (error) {
       console.error('Erro ao finalizar venda:', error);
-      alert('❌ Erro ao finalizar venda: ' + error.message);
+      alert('âŒ Erro ao finalizar venda: ' + error.message);
     }
   };
 
@@ -325,7 +325,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
           Selecionar Vendedor - Mogi
         </h2>
         <p style={{ color: '#888' }}>
-          Escolha o vendedor responsável por esta venda
+          Escolha o vendedor responsÃ¡vel por esta venda
         </p>
       </div>
       
@@ -358,7 +358,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
               e.target.style.transform = 'translateY(0)';
             }}
           >
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👤</div>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>ðŸ‘¤</div>
             <h3 style={{ color: darkMode ? '#fff' : '#000', marginBottom: '0.5rem' }}>
               {vendedor.nome}
             </h3>
@@ -477,7 +477,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
               onClick={() => setEtapa('vendedor')}
               style={{ flex: 1 }}
             >
-              ← Voltar
+              â† Voltar
             </Button>
             <Button
               variant="primary"
@@ -485,7 +485,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
               disabled={carrinho.length === 0}
               style={{ flex: 2 }}
             >
-              Continuar →
+              Continuar â†’
             </Button>
           </div>
         </div>
@@ -501,7 +501,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
             Dados do Cliente - Mogi
           </h2>
           <p style={{ color: '#888' }}>
-            Preencha as informações do cliente
+            Preencha as informaÃ§Ãµes do cliente
           </p>
         </div>
         
@@ -593,7 +593,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
             onClick={() => setEtapa('produtos')}
             size="large"
           >
-            ← Voltar
+            â† Voltar
           </Button>
           <Button
             variant="primary"
@@ -601,7 +601,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
             disabled={!cliente.nome_completo.trim()}
             size="large"
           >
-            Continuar →
+            Continuar â†’
           </Button>
         </div>
       </div>
@@ -616,7 +616,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
             Finalizar Pagamento - Mogi
           </h2>
           <p style={{ color: '#888' }}>
-            Cliente: <strong>{cliente.nome_completo}</strong> • 
+            Cliente: <strong>{cliente.nome_completo}</strong> â€¢ 
             Vendedor: <strong>{vendedorSelecionado?.nome}</strong>
           </p>
         </div>
@@ -701,7 +701,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
         
         <div style={{ marginBottom: '2rem' }}>
           <h3 style={{ color: darkMode ? '#fff' : '#000', marginBottom: '1rem' }}>
-            Método de Pagamento
+            MÃ©todo de Pagamento
           </h3>
           
           <div style={{
@@ -711,10 +711,10 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
             marginBottom: '1rem'
           }}>
             {[
-              { id: 'dinheiro', label: 'Dinheiro', icon: '💵', color: '#10b981' },
-              { id: 'cartao_credito', label: 'Crédito', icon: '💳', color: '#3b82f6' },
-              { id: 'cartao_debito', label: 'Débito', icon: '💳', color: '#8b5cf6' },
-              { id: 'pix', label: 'PIX', icon: '📱', color: '#f59e0b' }
+              { id: 'dinheiro', label: 'Dinheiro', icon: 'ðŸ’µ', color: '#10b981' },
+              { id: 'cartao_credito', label: 'CrÃ©dito', icon: 'ðŸ’³', color: '#3b82f6' },
+              { id: 'cartao_debito', label: 'DÃ©bito', icon: 'ðŸ’³', color: '#8b5cf6' },
+              { id: 'pix', label: 'PIX', icon: 'ðŸ“±', color: '#f59e0b' }
             ].map(metodo => (
               <button
                 key={metodo.id}
@@ -790,7 +790,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
                   borderRadius: '0.25rem',
                   fontWeight: '600'
                 }}>
-                  ⚠️ Valor insuficiente! Faltam: R$ {(calcularTotal() - valorPago).toFixed(2)}
+                  âš ï¸ Valor insuficiente! Faltam: R$ {(calcularTotal() - valorPago).toFixed(2)}
                 </div>
               )}
               
@@ -803,7 +803,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
                   borderRadius: '0.25rem',
                   fontWeight: '600'
                 }}>
-                  💰 Troco: R$ {(valorPago - calcularTotal()).toFixed(2)}
+                  ðŸ’° Troco: R$ {(valorPago - calcularTotal()).toFixed(2)}
                 </div>
               )}
             </div>
@@ -816,7 +816,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
             onClick={() => setEtapa('cliente')}
             size="large"
           >
-            ← Voltar
+            â† Voltar
           </Button>
           <Button
             variant="success"
@@ -824,7 +824,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
             disabled={!metodoPagamento || (metodoPagamento === 'dinheiro' && (!valorPago || valorPago < calcularTotal()))}
             size="large"
           >
-            ✅ FINALIZAR VENDA
+            âœ… FINALIZAR VENDA
           </Button>
         </div>
       </div>
@@ -837,7 +837,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
       <Header darkMode={darkMode}>
         <div>
           <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700' }}>
-            🛍️ Sistema de Vendas - Mogi das Cruzes
+            ðŸ›ï¸ Sistema de Vendas - Mogi das Cruzes
           </h1>
           <p style={{ margin: '0.25rem 0 0 0', color: '#888', fontSize: '0.9rem' }}>
             Etapa {etapa === 'vendedor' ? '1' : etapa === 'produtos' ? '2' : etapa === 'cliente' ? '3' : '4'} de 4: {
@@ -853,7 +853,7 @@ export default function SistemaVendasMogi({ user, darkMode, onClose }) {
           variant="danger"
           onClick={onClose}
         >
-          ✕ Fechar
+          âœ• Fechar
         </Button>
       </Header>
 

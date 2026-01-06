@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { supabase } from '../../utils/supabaseMogi';
+import { supabase } from '../../utils/supabase';
 
 const Container = styled.div`
   padding: 20px;

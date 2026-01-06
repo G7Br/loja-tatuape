@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { supabase, queryWithStoreMogi } from '../../utils/supabaseMogi';
+import { supabase, queryWithStore } from '../../utils/supabase';
 import { getBrasiliaDateOnly, getBrasiliaDateISO, formatCurrency, createBrasiliaTimestamp } from '../../utils/dateUtils';
 
 const Container = styled.div`
@@ -78,7 +78,8 @@ export default function CaixaControllerMogi({ user, darkMode }) {
     try {
       const hoje = getBrasiliaDateOnly();
       
-      const { data, error } = await queryWithStoreMogi('fechamentos_caixa')
+      const { data, error } = await supabase
+        .from('fechamentos_caixa_mogi')
         .select('*')
         .eq('usuario_id', user.id)
         .eq('data_fechamento', hoje)
@@ -86,6 +87,14 @@ export default function CaixaControllerMogi({ user, darkMode }) {
         .maybeSingle();
       
       console.log('Verificando caixa Mogi:', { data, error, hoje, userId: user.id });
+      
+      if (error) {
+        console.error('Erro na consulta do caixa Mogi:', error);
+        if (error.message.includes('does not exist') || error.message.includes('schema cache')) {
+          alert('❌ Erro: Tabela do caixa não encontrada. Execute o script de correção no Supabase.');
+          return;
+        }
+      }
       
       if (data && data.status === 'aberto') {
         setCaixaStatus('aberto');
@@ -97,6 +106,9 @@ export default function CaixaControllerMogi({ user, darkMode }) {
       }
     } catch (error) {
       console.error('Erro ao verificar caixa Mogi:', error);
+      if (error.message.includes('does not exist') || error.message.includes('schema cache')) {
+        alert('❌ Erro: Problema na estrutura do banco de dados. Contate o administrador.');
+      }
       setCaixaStatus('fechado');
     }
   };
@@ -111,15 +123,22 @@ export default function CaixaControllerMogi({ user, darkMode }) {
       const hoje = getBrasiliaDateOnly();
       
       // Verificar se já existe um fechamento para hoje
-      const { data: existente } = await queryWithStoreMogi('fechamentos_caixa')
+      const { data: existente, error: errorConsulta } = await supabase
+        .from('fechamentos_caixa_mogi')
         .select('*')
         .eq('usuario_id', user.id)
         .eq('data_fechamento', hoje)
-        .single();
+        .maybeSingle();
+      
+      if (errorConsulta && (errorConsulta.message.includes('does not exist') || errorConsulta.message.includes('schema cache'))) {
+        alert('❌ Erro: Tabela do caixa não encontrada. Execute o script fix_fechamentos_caixa_mogi.sql no Supabase.');
+        return;
+      }
       
       if (existente) {
         // Se já existe, apenas atualizar o status para aberto
-        const { error } = await queryWithStoreMogi('fechamentos_caixa')
+        const { error } = await supabase
+          .from('fechamentos_caixa_mogi')
           .update({
             valor_inicial: valorNumerico,
             status: 'aberto'
@@ -130,7 +149,8 @@ export default function CaixaControllerMogi({ user, darkMode }) {
         if (error) throw error;
       } else {
         // Se não existe, criar novo
-        const { error } = await queryWithStoreMogi('fechamentos_caixa')
+        const { error } = await supabase
+          .from('fechamentos_caixa_mogi')
           .insert({
             usuario_id: user.id,
             data_fechamento: hoje,
@@ -155,7 +175,12 @@ export default function CaixaControllerMogi({ user, darkMode }) {
       
       alert(`✅ Caixa Mogi aberto com valor inicial de R$ ${valorNumerico.toFixed(2)}`);
     } catch (error) {
-      alert('❌ Erro ao abrir caixa Mogi: ' + error.message);
+      console.error('Erro completo ao abrir caixa:', error);
+      if (error.message.includes('does not exist') || error.message.includes('schema cache')) {
+        alert('❌ Erro: Problema na estrutura do banco. Execute o script de correção fix_fechamentos_caixa_mogi.sql');
+      } else {
+        alert('❌ Erro ao abrir caixa Mogi: ' + error.message);
+      }
     }
   };
 
@@ -168,7 +193,8 @@ export default function CaixaControllerMogi({ user, darkMode }) {
       const hoje = getBrasiliaDateOnly();
       
       // Atualizar status para fechado
-      const { error } = await queryWithStoreMogi('fechamentos_caixa')
+      const { error } = await supabase
+        .from('fechamentos_caixa_mogi')
         .update({ 
           status: 'fechado'
         })
@@ -178,7 +204,8 @@ export default function CaixaControllerMogi({ user, darkMode }) {
       if (error) throw error;
       
       // Atualizar histórico
-      await queryWithStoreMogi('historico_caixa_diario')
+      await supabase
+        .from('historico_caixa_diario_mogi')
         .update({ status: 'fechado' })
         .eq('usuario_id', user.id)
         .eq('data_operacao', hoje);
@@ -202,7 +229,8 @@ export default function CaixaControllerMogi({ user, darkMode }) {
       const hoje = getBrasiliaDateOnly();
       
       // Buscar valor inicial do caixa
-      const { data: caixaData } = await queryWithStoreMogi('fechamentos_caixa')
+      const { data: caixaData } = await supabase
+        .from('fechamentos_caixa_mogi')
         .select('valor_inicial')
         .eq('usuario_id', user.id)
         .eq('data_fechamento', hoje)
@@ -210,87 +238,83 @@ export default function CaixaControllerMogi({ user, darkMode }) {
       
       const valorInicial = parseFloat(caixaData?.valor_inicial || 0);
       
-      // Buscar todas as vendas e filtrar por data
-      const { data: todasVendas, error: vendasError } = await queryWithStoreMogi('vendas')
-        .select('*');
+      // Buscar vendas dos últimos 2 dias (CORRIGIDO)
+      const ontem = new Date();
+      ontem.setDate(ontem.getDate() - 1);
+      const ontemStr = ontem.toISOString().split('T')[0];
       
-      console.log('Todas as vendas Mogi:', todasVendas);
-      console.log('Erro vendas Mogi:', vendasError);
+      const { data: vendasData, error: vendasError } = await supabase
+        .from('vendas_mogi')
+        .select('*')
+        .gte('data_venda', ontemStr + 'T00:00:00')
+        .lt('data_venda', hoje + 'T23:59:59')
+        .neq('forma_pagamento', 'pendente_caixa')
+        .neq('status', 'cancelada')
+        .in('status', ['finalizada', 'pendente']);
       
-      // Filtrar vendas do dia
-      const vendasData = todasVendas ? todasVendas.filter(venda => {
-        const dataVenda = venda.data_venda || venda.created_at;
-        return dataVenda && dataVenda.startsWith(hoje);
-      }) : [];
+      console.log('🔍 DEBUG - Parâmetros de busca:');
+      console.log('  - Data hoje:', hoje);
+      console.log('  - Data ontem:', ontemStr);
+      console.log('  - Buscando de:', ontemStr + 'T00:00:00', 'até:', hoje + 'T23:59:59');
       
-      console.log('Vendas do dia Mogi:', vendasData);
+      console.log('📊 Vendas encontradas Mogi:', vendasData?.length || 0);
+      console.log('❌ Erro vendas Mogi:', vendasError);
+      
+      if (vendasData && vendasData.length > 0) {
+        console.log('🔍 Primeiras vendas:', vendasData.slice(0, 3));
+      } else {
+        console.log('⚠️ NENHUMA VENDA ENCONTRADA - Verificando no banco...');
+        // Buscar sem filtro de data para debug
+        const { data: todasVendas } = await supabase
+          .from('vendas_mogi')
+          .select('*')
+          .order('data_venda', { ascending: false })
+          .limit(5);
+        console.log('🔍 Últimas 5 vendas no banco:', todasVendas);
+      }
       
       // Buscar saídas do dia
-      const { data: saidasData } = await queryWithStoreMogi('saidas_caixa')
+      const { data: saidasData } = await supabase
+        .from('saidas_caixa_mogi')
         .select('*')
         .eq('data', hoje);
       
-      // Função para processar forma de pagamento
-      const processarFormaPagamento = (formaPagamento, valorFinal) => {
-        const resultado = {
-          dinheiro: 0,
-          credito: 0,
-          debito: 0,
-          pix: 0,
-          link_pagamento: 0
-        };
+      // Função para contabilizar pagamento misto - DIRETA
+      const contabilizarPagamentoMisto = (formaPagamento, valorFinal) => {
+        const resultado = { dinheiro: 0, credito: 0, debito: 0, pix: 0, link_pagamento: 0 };
 
-        if (!formaPagamento) return resultado;
+        if (!formaPagamento) {
+          resultado.dinheiro = valorFinal;
+          return resultado;
+        }
 
         const forma = formaPagamento.toLowerCase();
 
-        // Verificar se é pagamento misto (contém |)
+        // Se é pagamento misto (contém |)
         if (forma.includes('|')) {
-          const formas = forma.split('|');
-          formas.forEach(f => {
-            const [tipo, valor] = f.split(':');
+          const opcoes = forma.split('|');
+          opcoes.forEach(opcao => {
+            const [tipo, valor] = opcao.trim().split(':');
             const valorNumerico = parseFloat(valor) || 0;
             
             switch (tipo.trim()) {
-              case 'dinheiro':
-                resultado.dinheiro += valorNumerico;
-                break;
-              case 'cartao_credito':
-                resultado.credito += valorNumerico;
-                break;
-              case 'cartao_debito':
-                resultado.debito += valorNumerico;
-                break;
-              case 'pix':
-                resultado.pix += valorNumerico;
-                break;
-              case 'link_pagamento':
-                resultado.link_pagamento += valorNumerico;
-                break;
+              case 'dinheiro': resultado.dinheiro += valorNumerico; break;
+              case 'cartao_credito': resultado.credito += valorNumerico; break;
+              case 'cartao_debito': resultado.debito += valorNumerico; break;
+              case 'pix': resultado.pix += valorNumerico; break;
+              case 'link_pagamento': resultado.link_pagamento += valorNumerico; break;
             }
           });
-        } else if (forma.includes('link_pagamento')) {
-          // Link de pagamento com taxa
-          resultado.link_pagamento = valorFinal;
         } else {
           // Pagamento simples
           switch (forma) {
-            case 'dinheiro':
-              resultado.dinheiro = valorFinal;
-              break;
-            case 'cartao_credito':
-            case 'credito':
-              resultado.credito = valorFinal;
-              break;
-            case 'cartao_debito':
-            case 'debito':
-              resultado.debito = valorFinal;
-              break;
-            case 'pix':
-              resultado.pix = valorFinal;
-              break;
-            default:
-              resultado.dinheiro = valorFinal;
+            case 'dinheiro': resultado.dinheiro = valorFinal; break;
+            case 'cartao_credito': case 'credito': resultado.credito = valorFinal; break;
+            case 'cartao_debito': case 'debito': resultado.debito = valorFinal; break;
+            case 'pix': resultado.pix = valorFinal; break;
+            default: 
+              if (forma.includes('link_pagamento')) resultado.link_pagamento = valorFinal;
+              else resultado.dinheiro = valorFinal;
               break;
           }
         }
@@ -298,38 +322,51 @@ export default function CaixaControllerMogi({ user, darkMode }) {
         return resultado;
       };
 
-      // Calcular totais das vendas
+      // Calcular totais das vendas (CORRIGIDO)
       let vendas_dinheiro = 0, vendas_credito = 0, vendas_debito = 0, vendas_pix = 0, vendas_link = 0;
       let qtd_vendas_dinheiro = 0, qtd_vendas_credito = 0, qtd_vendas_debito = 0, qtd_vendas_pix = 0;
       let total_troco = 0;
       
-      if (vendasData) {
-        vendasData.forEach(venda => {
+      if (vendasData && vendasData.length > 0) {
+        console.log('💰 Processando', vendasData.length, 'vendas Mogi');
+        
+        // Atualizar vendas pendentes para finalizadas
+        const vendasPendentes = vendasData.filter(v => v.status === 'pendente');
+        if (vendasPendentes.length > 0) {
+          console.log('🔄 Finalizando', vendasPendentes.length, 'vendas pendentes');
+          for (const venda of vendasPendentes) {
+            supabase
+              .from('vendas_mogi')
+              .update({ status: 'finalizada' })
+              .eq('id', venda.id)
+              .then(() => console.log('✅ Finalizada:', venda.numero_venda));
+          }
+        }
+        
+        vendasData.forEach((venda, index) => {
           const valor = parseFloat(venda.valor_final || 0);
           const troco = parseFloat(venda.troco || 0);
           const formaPagamento = venda.forma_pagamento;
           
-          console.log('Processando venda Mogi:', { formaPagamento, valor, status: venda.status });
+          const contabilizacao = contabilizarPagamentoMisto(formaPagamento, valor);
+          console.log(`✅ Venda ${index + 1} (${venda.numero_venda}):`, contabilizacao);
           
-          // Só processar vendas finalizadas ou pendentes (não canceladas)
-          if (venda.status !== 'cancelada' && formaPagamento !== 'pendente_caixa') {
-            const processamento = processarFormaPagamento(formaPagamento, valor);
-            
-            vendas_dinheiro += processamento.dinheiro;
-            vendas_credito += processamento.credito;
-            vendas_debito += processamento.debito;
-            vendas_pix += processamento.pix;
-            vendas_link += processamento.link_pagamento;
-            
-            // Contar quantidades (simplificado)
-            if (processamento.dinheiro > 0) qtd_vendas_dinheiro++;
-            if (processamento.credito > 0) qtd_vendas_credito++;
-            if (processamento.debito > 0) qtd_vendas_debito++;
-            if (processamento.pix > 0) qtd_vendas_pix++;
-            
-            total_troco += troco;
-          }
+          vendas_dinheiro += contabilizacao.dinheiro;
+          vendas_credito += contabilizacao.credito;
+          vendas_debito += contabilizacao.debito;
+          vendas_pix += contabilizacao.pix;
+          vendas_link += contabilizacao.link_pagamento;
+          
+          // Contar quantidades
+          if (contabilizacao.dinheiro > 0) qtd_vendas_dinheiro++;
+          if (contabilizacao.credito > 0) qtd_vendas_credito++;
+          if (contabilizacao.debito > 0) qtd_vendas_debito++;
+          if (contabilizacao.pix > 0) qtd_vendas_pix++;
+          
+          total_troco += troco;
         });
+      } else {
+        console.log('⚠️ Nenhuma venda encontrada para hoje');
       }
       
       // Calcular total de saídas
@@ -395,26 +432,26 @@ export default function CaixaControllerMogi({ user, darkMode }) {
       const percentualPix = resumoDia.total_entradas > 0 ? (resumoDia.vendas_pix / resumoDia.total_entradas * 100) : 0;
       
       const relatorio = `
-╔══════════════════════════════════════════════════════════════╗
+╔═══════════════════════════════════════════════════════════════╗
 ║                    RELATÓRIO DE FECHAMENTO                  ║
 ║                         CAIXA MOGI                          ║
-╚══════════════════════════════════════════════════════════════╝
+╚═══════════════════════════════════════════════════════════════╝
 
 📅 DATA: ${hoje} | ⏰ HORÁRIO: ${agora.split(' ')[1]}
 👤 OPERADOR: ${user.nome}
 
-┌─────────────────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────────────────┐
 │                      RESUMO EXECUTIVO                      │
-└─────────────────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────────────────┘
 💰 Valor Inicial do Caixa: R$ ${resumoDia.valor_inicial.toFixed(2)}
 💵 Total de Vendas: R$ ${resumoDia.total_entradas.toFixed(2)}
 📊 Quantidade de Vendas: ${totalVendas}
 🎯 Ticket Médio: R$ ${ticketMedio.toFixed(2)}
 💰 Saldo Final: R$ ${resumoDia.saldo_final.toFixed(2)}
 
-┌─────────────────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────────────────┐
 │                  FORMAS DE PAGAMENTO                       │
-└─────────────────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────────────────┘
 💵 DINHEIRO (${percentualDinheiro.toFixed(1)}%):
    Vendas: ${resumoDia.qtd_vendas_dinheiro} | Valor: R$ ${resumoDia.vendas_dinheiro.toFixed(2)}
    Troco Dado: R$ ${resumoDia.total_troco.toFixed(2)}
@@ -431,9 +468,9 @@ export default function CaixaControllerMogi({ user, darkMode }) {
 🔗 LINK DE PAGAMENTO:
    Valor: R$ ${(resumoDia.vendas_link || 0).toFixed(2)}
 
-┌────────────────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────────────────┐
 │                    ANÁLISE FINANCEIRA                      │
-└─────────────────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────────────────┘
 📈 Total Recebido: R$ ${resumoDia.total_entradas.toFixed(2)}
 📉 Total de Saídas: R$ ${resumoDia.total_saidas.toFixed(2)}
 💰 Dinheiro Físico em Caixa: R$ ${(resumoDia.valor_inicial + resumoDia.vendas_dinheiro - resumoDia.total_saidas - resumoDia.total_troco).toFixed(2)}
@@ -441,9 +478,9 @@ export default function CaixaControllerMogi({ user, darkMode }) {
 💳 Valores em Cartão: R$ ${(resumoDia.vendas_credito + resumoDia.vendas_debito).toFixed(2)}
 🔗 Valores em Link: R$ ${(resumoDia.vendas_link || 0).toFixed(2)}
 
-┌─────────────────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────────────────┐
 │                      INDICADORES                           │
-└─────────────────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────────────────┘
 🏆 Forma de Pagamento Predominante: ${getMaiorFormaPagamento()}
 📊 Distribuição: Dinheiro ${percentualDinheiro.toFixed(0)}% | Cartão ${percentualCartao.toFixed(0)}% | PIX ${percentualPix.toFixed(0)}%
 ⚡ Status do Caixa: ${caixaStatus.toUpperCase()}
@@ -458,7 +495,8 @@ export default function CaixaControllerMogi({ user, darkMode }) {
 
       // Salvar relatório no histórico
       const hoje_iso = getBrasiliaDateOnly();
-      await queryWithStoreMogi('historico_caixa_diario')
+      await supabase
+        .from('historico_caixa_diario_mogi')
         .upsert({
           usuario_id: user.id,
           data_operacao: hoje_iso,

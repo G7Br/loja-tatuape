@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { supabase } from '../../utils/supabaseMogi';
+import { supabase } from '../../utils/supabase';
 import { formatBrasiliaDateTime, formatCurrency } from '../../utils/dateUtils';
 
 const Container = styled.div`

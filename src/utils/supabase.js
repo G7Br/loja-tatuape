@@ -1,15 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Credenciais Tatuapé
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// CONFIGURAÇÃO UNIFICADA - TODOS USAM O PROJETO TATUAPÉ
+// ⚠️ IMPORTANTE: Sempre usar este banco para ambas as lojas (Tatuapé e Mogi)
+const supabaseUrl = 'https://cuukvbdlzzksaxyjielo.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dWt2YmRsenprc2F4eWppZWxvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxMjMzNDMsImV4cCI6MjA3OTY5OTM0M30.hGGVP4iHX35hJT5KHcth91z5KENS5urO5z5uVT2gcso';
 
-// Credenciais Mogi
-const supabaseUrlMogi = 'https://imecyqjxvkxmdgfdvmbk.supabase.co';
-const supabaseKeyMogi = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltZWN5cWp4dmt4bWRnZmR2bWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MDU1ODgsImV4cCI6MjA4MDE4MTU4OH0.tKvXB75zt68xS3TyP27hX3VjItmIbNsy-OFP28fBw5k';
+// Log para confirmar qual banco está sendo usado
+console.log('🔗 Supabase URL configurada:', supabaseUrl);
 
+// Cliente único para ambas as lojas
 export const supabase = createClient(supabaseUrl, supabaseKey);
-export const supabaseMogi = createClient(supabaseUrlMogi, supabaseKeyMogi);
 
 // Helper para obter tabela baseada na loja atual
 export const getTableName = (baseTable, user = null) => {
@@ -49,6 +49,9 @@ const redirectUser = (store, cargo) => {
       case 'caixa':
         redirectPath = '/mogi';
         break;
+      case 'separador_online':
+        redirectPath = '/online/separador';
+        break;
       default:
         redirectPath = '/mogi';
         console.log('Cargo não reconhecido, usando /mogi como padrão');
@@ -66,86 +69,50 @@ export const authService = {
     try {
       // Detectar loja automaticamente pelo email
       const detectedStore = detectStoreFromEmail(usuario);
+      const tableName = `usuarios_${detectedStore || 'tatuape'}`;
       
-      if (detectedStore) {
-        // Login direto na loja detectada
-        const client = detectedStore === 'mogi' ? supabaseMogi : supabase;
-        const { data, error } = await client
-          .from(`usuarios_${detectedStore}`)
-          .select('*')
-          .eq('email', usuario)
-          .eq('senha', senha)
-          .eq('ativo', true)
-          .single();
-        
-        if (error || !data) {
-          return { user: null, error: 'Usuário ou senha inválidos' };
-        }
-        
-        console.log('=== LOGIN SUCCESS ===');
-        console.log('Dados do usuário:', data);
-        console.log('Campo cargo:', data.cargo);
-        console.log('Campo tipo:', data.tipo);
-        console.log('Loja detectada:', detectedStore);
-        
-        // Usar cargo ou tipo, o que estiver disponível
-        const userRole = data.cargo || data.tipo;
-        console.log('Role final usado:', userRole);
-        
-        const userWithStore = { ...data, loja: detectedStore };
-        localStorage.setItem('current_user', JSON.stringify(userWithStore));
-        localStorage.setItem('current_store', detectedStore);
-        
-        const redirectPath = redirectUser(detectedStore, userRole);
-        
-        return { 
-          user: userWithStore, 
-          error: null, 
-          redirectTo: detectedStore,
-          redirectPath 
-        };
+      console.log('🔍 Tentando login:', {
+        usuario,
+        detectedStore,
+        tableName,
+        supabaseUrl: supabaseUrl
+      });
+      
+      // Buscar na tabela usuarios com sufixo da loja
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .eq('email', usuario)
+        .eq('senha', senha)
+        .eq('ativo', true)
+        .single();
+      
+      if (error || !data) {
+        return { user: null, error: 'Usuário ou senha inválidos' };
       }
       
-      // Se não detectou pelo email, tentar em ambas as lojas
-      const stores = ['tatuape', 'mogi'];
+      console.log('=== LOGIN SUCCESS ===');
+      console.log('Dados do usuário:', data);
+      console.log('Campo cargo:', data.cargo);
+      console.log('Campo tipo:', data.tipo);
+      console.log('Loja detectada:', detectedStore);
       
-      for (const store of stores) {
-        const client = store === 'mogi' ? supabaseMogi : supabase;
-        const { data, error } = await client
-          .from(`usuarios_${store}`)
-          .select('*')
-          .eq('email', usuario)
-          .eq('senha', senha)
-          .eq('ativo', true)
-          .single();
-        
-        if (!error && data) {
-          console.log('=== FALLBACK LOGIN SUCCESS ===');
-          console.log('Dados do usuário:', data);
-          console.log('Campo cargo:', data.cargo);
-          console.log('Campo tipo:', data.tipo);
-          console.log('Loja encontrada:', store);
-          
-          // Usar cargo ou tipo, o que estiver disponível
-          const userRole = data.cargo || data.tipo;
-          console.log('Role final usado:', userRole);
-          
-          const userWithStore = { ...data, loja: store };
-          localStorage.setItem('current_user', JSON.stringify(userWithStore));
-          localStorage.setItem('current_store', store);
-          
-          const redirectPath = redirectUser(store, userRole);
-          
-          return { 
-            user: userWithStore, 
-            error: null, 
-            redirectTo: store,
-            redirectPath 
-          };
-        }
-      }
+      // Usar cargo ou tipo, o que estiver disponível
+      const userRole = data.cargo || data.tipo;
+      console.log('Role final usado:', userRole);
       
-      return { user: null, error: 'Usuário ou senha inválidos' };
+      const userWithStore = { ...data, loja: detectedStore || 'tatuape' };
+      localStorage.setItem('current_user', JSON.stringify(userWithStore));
+      localStorage.setItem('current_store', detectedStore || 'tatuape');
+      
+      const redirectPath = redirectUser(detectedStore || 'tatuape', userRole);
+      
+      return { 
+        user: userWithStore, 
+        error: null, 
+        redirectTo: detectedStore || 'tatuape',
+        redirectPath 
+      };
     } catch (error) {
       return { user: null, error: error.message };
     }
@@ -167,7 +134,6 @@ export const authService = {
   signOut: () => {
     localStorage.removeItem('current_user');
     localStorage.removeItem('current_store');
-    // Manter compatibilidade
     localStorage.removeItem('user_tatuape');
     return Promise.resolve();
   }

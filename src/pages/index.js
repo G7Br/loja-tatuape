@@ -69,6 +69,23 @@ export default function Home() {
       return <Vendedor user={user} onLogout={handleLogout} />;
     case 'caixa':
       return <Caixa user={user} onLogout={handleLogout} />;
+    case 'ceo':
+      // Redirecionar para página específica do CEO
+      window.location.href = '/ceo';
+      return null;
+    case 'financeiro':
+      // Redirecionar para página específica do financeiro
+      window.location.href = '/financeiro';
+      return null;
+    case 'vendedor_online':
+      window.location.href = '/online/vendedor';
+      return null;
+    case 'gerente_online':
+      window.location.href = '/online/gerente';
+      return null;
+    case 'separador_online':
+      window.location.href = '/online/separador';
+      return null;
     default:
       return (
         <div style={{

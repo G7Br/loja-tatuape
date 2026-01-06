@@ -15,4 +15,4 @@ export { default as ComprovanteVendaMogi } from './ComprovanteVendaMogi';
 export { default as StoreIndicatorMogi } from './StoreIndicatorMogi';
 
 // Utilitários específicos para Mogi
-export { supabase as supabaseMogi, queryWithStoreMogi, authServiceMogi } from '../../utils/supabaseMogi';
+export { supabase, queryWithStore, authService } from '../../utils/supabase';

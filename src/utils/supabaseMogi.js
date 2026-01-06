@@ -1,62 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
+// ARQUIVO DESCONTINUADO - AGORA TUDO USA O ARQUIVO PRINCIPAL
+// Redirecionamento para manter compatibilidade
+export { supabase, authService } from './supabase.js';
 
-const supabaseUrlMogi = 'https://imecyqjxvkxmdgfdvmbk.supabase.co';
-const supabaseKeyMogi = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltZWN5cWp4dmt4bWRnZmR2bWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MDU1ODgsImV4cCI6MjA4MDE4MTU4OH0.tKvXB75zt68xS3TyP27hX3VjItmIbNsy-OFP28fBw5k';
+// Funções de compatibilidade
+export const supabaseMogi = require('./supabase.js').supabase;
+export const authServiceMogi = require('./supabase.js').authService;
 
-export const supabase = createClient(supabaseUrlMogi, supabaseKeyMogi);
-export const supabaseMogi = supabase;
-
-// Helper para obter tabela baseada na loja Mogi
-export const getTableNameMogi = (baseTable) => {
-  return `${baseTable}_mogi`;
-};
-
-// Helper para queries com loja Mogi
+// Helper simplificado para tabelas Mogi
 export const queryWithStoreMogi = (baseTable) => {
-  const tableName = getTableNameMogi(baseTable);
-  return supabase.from(tableName);
+  const { supabase } = require('./supabase.js');
+  return supabase.from(`${baseTable}_mogi`);
 };
 
-export const authServiceMogi = {
-  login: async (usuario, senha) => {
-    try {
-      const { data, error } = await supabase
-        .from('usuarios_mogi')
-        .select('*')
-        .eq('email', usuario)
-        .eq('senha', senha)
-        .eq('ativo', true)
-        .single();
-      
-      if (error || !data) {
-        return { user: null, error: 'Usuário ou senha inválidos' };
-      }
-      
-      const userWithStore = { ...data, loja: 'mogi' };
-      localStorage.setItem('current_user', JSON.stringify(userWithStore));
-      localStorage.setItem('current_store', 'mogi');
-      return { user: userWithStore, error: null };
-    } catch (error) {
-      return { user: null, error: error.message };
-    }
-  },
-
-  getCurrentUser: () => {
-    try {
-      const user = localStorage.getItem('current_user');
-      return user ? JSON.parse(user) : null;
-    } catch {
-      return null;
-    }
-  },
-
-  getCurrentStore: () => {
-    return 'mogi';
-  },
-
-  signOut: () => {
-    localStorage.removeItem('current_user');
-    localStorage.removeItem('current_store');
-    return Promise.resolve();
-  }
-};
+export const getTableNameMogi = (baseTable) => `${baseTable}_mogi`;

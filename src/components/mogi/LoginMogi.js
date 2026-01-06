@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { authService } from '../../utils/supabase';
+import { clearSupabaseCache, forceCorrectDatabase } from '../../utils/cacheUtils';
 import LoadingScreen from '../LoadingScreen';
 
 const LoginScreen = styled.div`
@@ -252,6 +253,10 @@ export default function LoginMogi({ onLogin }) {
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
+    // Limpar cache e garantir banco correto ao carregar
+    clearSupabaseCache();
+    forceCorrectDatabase();
+    
     const timer = setTimeout(() => {
       setInitialLoading(false);
     }, 2500);
@@ -273,11 +278,18 @@ export default function LoginMogi({ onLogin }) {
     }
     
     try {
+      // Garantir que estamos usando o banco correto antes do login
+      forceCorrectDatabase();
+      
+      console.log('🔐 Tentando login Mogi:', { username, timestamp: new Date().toISOString() });
+      
       const { user, error, redirectPath } = await authService.login(username, password);
       
       if (error) {
+        console.error('❌ Erro no login:', error);
         setError(error);
       } else {
+        console.log('✅ Login bem-sucedido:', { user: user?.nome, loja: user?.loja });
         // Se o usuário é de Mogi, redirecionar para a página correta
         if (user && user.loja === 'mogi' && redirectPath) {
           window.location.href = redirectPath;
@@ -286,7 +298,7 @@ export default function LoginMogi({ onLogin }) {
         }
       }
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error('💥 Erro no login:', error);
       setError('Erro ao conectar com o servidor');
     } finally {
       setLoading(false);

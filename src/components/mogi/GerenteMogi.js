@@ -3,13 +3,16 @@
 
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { supabase } from '../../utils/supabaseMogi';
+import { supabase } from '../../utils/supabase';
 import * as XLSX from 'xlsx';
 import GerenciarFotosVendedores from '../GerenciarFotosVendedores';
 import GeradorQRCode from '../GeradorQRCode';
 import GeradorQRCodeLote from '../GeradorQRCodeLote';
 import RelatorioBlackFridayMogi from './RelatorioBlackFridayMogi';
 import TrocarSenhaUsuarios from '../../../ferramentas/TrocarSenhaUsuarios';
+
+// Helper para queries Mogi
+const queryWithStoreMogi = (table) => supabase.from(`${table}_mogi`);
 
 // MESMOS ESTILOS DO SISTEMA PRINCIPAL
 const Container = styled.div`
@@ -529,7 +532,7 @@ export default function Gerente({ user, onLogout }) {
         .from('vendas_mogi')
         .select('*')
         .neq('forma_pagamento', 'pendente_caixa')
-        .order('data_venda', { ascending: false });
+        .order('created_at', { ascending: false });
       
       if (vendasError) {
         console.error('Erro ao carregar vendas para relatório:', vendasError);
@@ -559,30 +562,30 @@ export default function Gerente({ user, onLogout }) {
       
       const vendasDia = todasVendas?.filter(v => {
         try {
-          const dataVenda = new Date(v.data_venda);
+          const dataVenda = new Date(v.created_at);
           return !isNaN(dataVenda.getTime()) && dataVenda >= inicioDia && dataVenda <= hoje && v.forma_pagamento !== 'pendente_caixa';
         } catch (e) {
-          console.error('Erro ao fazer parse de data:', v.data_venda, e);
+          console.error('Erro ao fazer parse de data:', v.created_at, e);
           return false;
         }
       }) || [];
       
       const vendasSemana = todasVendas?.filter(v => {
         try {
-          const dataVenda = new Date(v.data_venda);
+          const dataVenda = new Date(v.created_at);
           return !isNaN(dataVenda.getTime()) && dataVenda >= inicioSemana && dataVenda <= hoje && v.forma_pagamento !== 'pendente_caixa';
         } catch (e) {
-          console.error('Erro ao fazer parse de data:', v.data_venda, e);
+          console.error('Erro ao fazer parse de data:', v.created_at, e);
           return false;
         }
       }) || [];
       
       const vendasMes = todasVendas?.filter(v => {
         try {
-          const dataVenda = new Date(v.data_venda);
+          const dataVenda = new Date(v.created_at);
           return !isNaN(dataVenda.getTime()) && dataVenda >= inicioMes && dataVenda <= hoje && v.forma_pagamento !== 'pendente_caixa';
         } catch (e) {
-          console.error('Erro ao fazer parse de data:', v.data_venda, e);
+          console.error('Erro ao fazer parse de data:', v.created_at, e);
           return false;
         }
       }) || [];
@@ -707,7 +710,7 @@ export default function Gerente({ user, onLogout }) {
       const { data: vendasData, error: erroVendas } = await supabase
         .from('vendas_mogi')
         .select('*')
-        .order('data_venda', { ascending: false });
+        .order('created_at', { ascending: false });
       
       if (erroVendas) {
         console.error('Erro ao carregar vendas:', erroVendas);
@@ -745,7 +748,7 @@ export default function Gerente({ user, onLogout }) {
       
       const vendasMes = (vendasData || []).filter(v => {
         try {
-          const dataVenda = new Date(v.data_venda);
+          const dataVenda = new Date(v.created_at);
           return !isNaN(dataVenda.getTime()) && dataVenda >= inicioMes && v.forma_pagamento !== 'pendente_caixa';
         } catch (e) {
           return false;
@@ -754,7 +757,7 @@ export default function Gerente({ user, onLogout }) {
       
       const vendasHoje = (vendasData || []).filter(v => {
         try {
-          const dataVenda = new Date(v.data_venda);
+          const dataVenda = new Date(v.created_at);
           return !isNaN(dataVenda.getTime()) && dataVenda >= inicioDia && v.forma_pagamento !== 'pendente_caixa';
         } catch (e) {
           return false;
@@ -1642,7 +1645,7 @@ export default function Gerente({ user, onLogout }) {
                 {vendas.filter(v => v.forma_pagamento !== 'pendente_caixa').map(v => (
                   <tr key={v.id}>
                     <Td>{v.numero_venda}</Td>
-                    <Td>{new Date(v.data_venda).toLocaleString('pt-BR')}</Td>
+                    <Td>{new Date(v.created_at).toLocaleString('pt-BR')}</Td>
                     <Td>{v.cliente_nome || '-'}</Td>
                     <Td>{formatarValor(parseFloat(v.valor_final || 0))}</Td>
                     <Td>{v.forma_pagamento || 'Pendente'}</Td>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { supabase, queryWithStore } from '../../utils/supabase';
 import { useTheme } from '../../contexts/ThemeContext';
 import VendedorProfileMogi from './VendedorProfileMogi';
@@ -154,7 +154,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
     try {
       setShowQRScanner(false);
       
-      // Buscar produto pelo código QR
+      // Buscar produto pelo cÃ³digo QR
       const { data: produto, error } = await queryWithStoreMogi('produtos')
         .select('*')
         .eq('codigo', data)
@@ -213,7 +213,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
     }
 
     if (!clienteTelefone.trim()) {
-      alert('Telefone do cliente é obrigatório!');
+      alert('Telefone do cliente Ã© obrigatÃ³rio!');
       return;
     }
 
@@ -365,11 +365,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
         .delete()
         .eq('id', venda.id);
       
-      if (deleteError) {
-        console.error('Erro ao remover do standby:', deleteError);
-      } else {
-        console.log('Venda removida do standby com sucesso');
-      }
+      if (deleteError) console.error('Erro ao remover do standby:', deleteError);
 
       alert(`Venda ${numeroVenda} enviada para o caixa!\nTotal: R$ ${valorTotal.toFixed(2)}`);
       
@@ -397,7 +393,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
     }
 
     if (!clienteTelefone.trim()) {
-      alert('Telefone do cliente é obrigatório!');
+      alert('Telefone do cliente Ã© obrigatÃ³rio!');
       return;
     }
 
@@ -548,7 +544,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
               cursor: 'pointer',
               fontSize: '1.2rem'
             }}>
-              {darkMode ? '☀️' : '🌙'}
+              {darkMode ? 'â˜€ï¸' : 'ðŸŒ™'}
             </button>
             <button onClick={() => setShowProfile(true)} style={{
               padding: '8px 12px',
@@ -559,7 +555,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
               cursor: 'pointer',
               fontSize: '0.9rem'
             }}>
-              👤
+              ðŸ‘¤
             </button>
             <button onClick={onLogout} style={{
               padding: '8px 12px',
@@ -644,7 +640,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
                   color: darkMode ? '#888' : '#666',
                   fontSize: '1rem'
                 }}>
-                  🔍
+                  ðŸ”
                 </div>
                 <input
                   placeholder="Buscar produto..."
@@ -680,7 +676,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
                   gap: '8px'
                 }}
               >
-                📱 Escanear QR Code
+                ðŸ“± Escanear QR Code
               </button>
             </div>
             
@@ -728,7 +724,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
                     fontSize: '0.7rem'
                   }}
                 >
-                  ✕ Limpar
+                  âœ• Limpar
                 </button>
               )}
             </div>
@@ -737,7 +733,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
             <div style={{ display: 'grid', gap: '0.5rem' }}>
               {produtosFiltrados.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '2rem', color: darkMode ? '#888' : '#666' }}>
-                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔍</div>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>ðŸ”</div>
                   <p style={{ margin: 0, fontSize: '0.9rem' }}>
                     {busca ? `Nenhum produto encontrado para "${busca}"` : 'Nenhum produto nesta categoria'}
                   </p>
@@ -750,7 +746,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
                     borderRadius: '8px',
                     overflow: 'hidden'
                   }}>
-                    {/* CABEÇALHO */}
+                    {/* CABEÃ‡ALHO */}
                     <div 
                       onClick={() => setProdutoSelecionado(produtoSelecionado === produto.nome ? null : produto.nome)}
                       style={{
@@ -765,7 +761,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>{produto.nome}</div>
                         <div style={{ fontSize: '0.8rem', color: darkMode ? '#888' : '#666' }}>
-                          {produto.tipo} • {produto.variacoes.length} opção{produto.variacoes.length > 1 ? 'ões' : ''}
+                          {produto.tipo} â€¢ {produto.variacoes.length} opÃ§Ã£o{produto.variacoes.length > 1 ? 'Ãµes' : ''}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
@@ -773,12 +769,12 @@ export default function VendedorMobileMogi({ user, onLogout }) {
                           R$ {parseFloat(produto.preco_venda).toFixed(2)}
                         </div>
                         <div style={{ fontSize: '0.7rem', color: darkMode ? '#888' : '#666' }}>
-                          {produtoSelecionado === produto.nome ? '▲' : '▼'}
+                          {produtoSelecionado === produto.nome ? 'â–²' : 'â–¼'}
                         </div>
                       </div>
                     </div>
                     
-                    {/* VARIAÇÕES */}
+                    {/* VARIAÃ‡Ã•ES */}
                     {produtoSelecionado === produto.nome && (
                       <div style={{
                         borderTop: `1px solid ${darkMode ? '#444' : '#d1d5db'}`,
@@ -810,11 +806,11 @@ export default function VendedorMobileMogi({ user, onLogout }) {
                             <div style={{ flex: 1 }}>
                               <div style={{ fontWeight: '500', fontSize: '0.85rem' }}>
                                 {variacao.cor && `${variacao.cor}`}
-                                {variacao.cor && variacao.tamanho && ' • '}
+                                {variacao.cor && variacao.tamanho && ' â€¢ '}
                                 {variacao.tamanho && `Tam. ${variacao.tamanho}`}
                               </div>
                               <div style={{ fontSize: '0.7rem', color: darkMode ? '#888' : '#666' }}>
-                                {variacao.codigo} • Estoque: {variacao.estoque_atual}
+                                {variacao.codigo} â€¢ Estoque: {variacao.estoque_atual}
                               </div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -930,7 +926,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
               onChange={async (e) => {
                 setClienteTelefone(e.target.value);
                 if (e.target.value.length >= 10) {
-                  // Verificar se cliente já existe
+                  // Verificar se cliente jÃ¡ existe
                   const { data: clienteExistente } = await queryWithStoreMogi('clientes')
                     .select('*')
                     .eq('telefone', e.target.value)
@@ -967,7 +963,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
                 color: '#dc2626',
                 fontSize: '0.9rem'
               }}>
-                ⚠️ Cliente já está em standby com {clienteEmStandby.vendedor_nome}
+                âš ï¸ Cliente jÃ¡ estÃ¡ em standby com {clienteEmStandby.vendedor_nome}
               </div>
             )}
             {cpfJaExiste && (
@@ -980,7 +976,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
                 color: '#dc2626',
                 fontSize: '0.9rem'
               }}>
-                ⚠️ CPF já cadastrado para outro cliente
+                âš ï¸ CPF jÃ¡ cadastrado para outro cliente
               </div>
             )}
             <input
@@ -1067,9 +1063,9 @@ export default function VendedorMobileMogi({ user, onLogout }) {
           <div>
             {vendasStandby.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '3rem', color: darkMode ? '#888' : '#666' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>ðŸ“‹</div>
                 <h3>Nenhuma venda em standby</h3>
-                <p>As vendas enviadas para standby aparecerão aqui</p>
+                <p>As vendas enviadas para standby aparecerÃ£o aqui</p>
               </div>
             ) : (
               <div style={{ display: 'grid', gap: '1rem' }}>
@@ -1101,7 +1097,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
                         cursor: 'pointer',
                         fontSize: '0.8rem'
                       }}>
-                        ✏️ Editar
+                        âœï¸ Editar
                       </button>
                       <button onClick={() => finalizarVendaStandby(venda)} disabled={processandoVenda} style={{
                         flex: 1,
@@ -1113,7 +1109,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
                         cursor: processandoVenda ? 'not-allowed' : 'pointer',
                         fontSize: '0.8rem'
                       }}>
-                        ✅ Enviar
+                        âœ… Enviar
                       </button>
                       <button onClick={() => cancelarVendaStandby(venda.id)} style={{
                         flex: 1,
@@ -1125,7 +1121,7 @@ export default function VendedorMobileMogi({ user, onLogout }) {
                         cursor: 'pointer',
                         fontSize: '0.8rem'
                       }}>
-                        ❌ Cancelar
+                        âŒ Cancelar
                       </button>
                     </div>
                     

@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { supabase, queryWithStoreMogi } from '../../utils/supabaseMogi';
+import { supabase, queryWithStore } from '../../utils/supabase';
 import { createBrasiliaTimestamp } from '../../utils/dateUtils';
 import { useTheme } from '../../contexts/ThemeContext';
 import VendedorMobileMogi from './VendedorMobileMogi';
 import VendedorProfileMogi from './VendedorProfileMogi';
+
+// Helper para queries Mogi
+const queryWithStoreMogi = (table) => queryWithStore(table, { loja: 'mogi' });
 
 const Container = styled.div.withConfig({
   shouldForwardProp: (prop) => !['darkMode'].includes(prop)
@@ -143,12 +146,12 @@ export default function VendedorMogi({ user, onLogout }) {
     }
 
     if (!cliente.nome_completo.trim()) {
-      alert('Nome do cliente é obrigatório!');
+      alert('Nome do cliente Ã© obrigatÃ³rio!');
       return;
     }
 
     if (!cliente.telefone.trim()) {
-      alert('Telefone do cliente é obrigatório!');
+      alert('Telefone do cliente Ã© obrigatÃ³rio!');
       return;
     }
 
@@ -186,14 +189,14 @@ export default function VendedorMogi({ user, onLogout }) {
 
       await queryWithStoreMogi('itens_venda').insert(itens);
 
-      alert(`✅ Venda criada com sucesso!\n\nNúmero: ${numeroVenda}\nTotal: R$ ${valorTotal.toFixed(2)}\n\nDirecione o cliente ao caixa para finalizar o pagamento.`);
+      alert(`âœ… Venda criada com sucesso!\n\nNÃºmero: ${numeroVenda}\nTotal: R$ ${valorTotal.toFixed(2)}\n\nDirecione o cliente ao caixa para finalizar o pagamento.`);
       
       setCarrinho([]);
       setCliente({ nome_completo: '', telefone: '' });
       
     } catch (error) {
       console.error('Erro ao finalizar venda:', error);
-      alert('❌ Erro ao criar venda: ' + error.message);
+      alert('âŒ Erro ao criar venda: ' + error.message);
     }
   };
 
@@ -214,7 +217,7 @@ export default function VendedorMogi({ user, onLogout }) {
       <Header darkMode={darkMode}>
         <div>
           <h1 style={{ margin: 0, fontSize: '1.5rem' }}>
-            🛍️ Vendedor - {user.nome} (Mogi)
+            ðŸ›ï¸ Vendedor - {user.nome} (Mogi)
           </h1>
           <p style={{ margin: '0.25rem 0 0 0', color: '#888', fontSize: '0.9rem' }}>
             Crie vendas e direcione clientes ao caixa
@@ -239,13 +242,13 @@ export default function VendedorMogi({ user, onLogout }) {
             cursor: 'pointer',
             fontSize: '1.2rem'
           }}>
-            {darkMode ? '☀️' : '🌙'}
+            {darkMode ? 'â˜€ï¸' : 'ðŸŒ™'}
           </button>
           <Button onClick={() => setShowProfile(true)}>
-            👤 Perfil
+            ðŸ‘¤ Perfil
           </Button>
           <Button variant="danger" onClick={onLogout}>
-            🚪 Sair
+            ðŸšª Sair
           </Button>
         </div>
       </Header>
@@ -287,14 +290,14 @@ export default function VendedorMogi({ user, onLogout }) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h3 style={{ color: darkMode ? '#fff' : '#000', margin: 0 }}>
-            Produtos Disponíveis
+            Produtos DisponÃ­veis
           </h3>
           <Button
             variant="success"
             onClick={finalizarVenda}
             disabled={carrinho.length === 0 || !cliente.nome_completo.trim() || !cliente.telefone.trim()}
           >
-            ✅ Finalizar Venda ({carrinho.length} itens)
+            âœ… Finalizar Venda ({carrinho.length} itens)
           </Button>
         </div>
 
@@ -311,7 +314,7 @@ export default function VendedorMogi({ user, onLogout }) {
                 marginBottom: '1rem',
                 fontSize: '3rem'
               }}>
-                📦
+                ðŸ“¦
               </div>
               
               <h4 style={{ 
@@ -351,7 +354,7 @@ export default function VendedorMogi({ user, onLogout }) {
                 onClick={() => adicionarProduto(produto)}
                 style={{ width: '100%' }}
               >
-                ➕ Adicionar ao Carrinho
+                âž• Adicionar ao Carrinho
               </Button>
               
               {carrinho.find(item => item.id === produto.id) && (
@@ -374,9 +377,9 @@ export default function VendedorMogi({ user, onLogout }) {
 
         {produtos.length === 0 && (
           <div style={{ textAlign: 'center', padding: '4rem', color: '#888' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📦</div>
-            <h3>Nenhum produto disponível</h3>
-            <p>Não há produtos com estoque no momento.</p>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>ðŸ“¦</div>
+            <h3>Nenhum produto disponÃ­vel</h3>
+            <p>NÃ£o hÃ¡ produtos com estoque no momento.</p>
           </div>
         )}
       </MainContent>

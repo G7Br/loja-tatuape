@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { supabase } from '../../utils/supabaseMogi';
+import { supabase } from '../../utils/supabase';
 import { useTheme } from '../../contexts/ThemeContext';
 import { renderEstoquePage, renderSaidaValoresPage, renderVendedoresPage } from '../CaixaPages';
 import ComprovanteVendaMogi from './ComprovanteVendaMogi';
@@ -529,11 +529,20 @@ export default function CaixaMogi({ user, onLogout }) {
       setClientes(clientesRes.data || []);
       setHistoricoVendas(historicoRes.data || []);
       
+      // Buscar vendas dos últimos 2 dias para o rodapé
+      const ontem = new Date();
+      ontem.setDate(ontem.getDate() - 1);
+      const ontemStr = ontem.toISOString().split('T')[0];
+      
       const { data: vendasDiaData } = await supabase
         .from('vendas_mogi')
         .select('forma_pagamento')
         .neq('forma_pagamento', 'pendente_caixa')
-        .gte('data_venda', hoje);
+        .neq('status', 'cancelada')
+        .in('status', ['finalizada', 'pendente'])
+        .gte('data_venda', ontemStr + 'T00:00:00');
+      
+      console.log('🔍 Vendas para rodapé Mogi:', vendasDiaData?.length || 0);
       
       const contadores = (vendasDiaData || []).reduce((acc, venda) => {
         const formaPagamento = venda.forma_pagamento;
@@ -544,16 +553,15 @@ export default function CaixaMogi({ user, onLogout }) {
           formas.forEach(forma => {
             const [tipo] = forma.split(':');
             if (tipo === 'dinheiro') acc.dinheiro++;
-            else if (tipo === 'cartao_credito') acc.credito++;
-            else if (tipo === 'cartao_debito') acc.debito++;
+            else if (tipo === 'cartao_credito' || tipo === 'credito') acc.credito++;
+            else if (tipo === 'cartao_debito' || tipo === 'debito') acc.debito++;
             else if (tipo === 'pix') acc.pix++;
             else if (tipo === 'link_pagamento') acc.link++;
           });
         } else {
           if (formaPagamento === 'dinheiro') acc.dinheiro++;
-          else if (formaPagamento === 'cartao_credito') acc.credito++;
-          else if (formaPagamento === 'cartao_debito') acc.debito++;
-          else if (formaPagamento?.includes('cartao')) acc.credito++;
+          else if (formaPagamento === 'cartao_credito' || formaPagamento === 'credito') acc.credito++;
+          else if (formaPagamento === 'cartao_debito' || formaPagamento === 'debito') acc.debito++;
           else if (formaPagamento === 'pix') acc.pix++;
           else if (formaPagamento?.includes('link_pagamento')) acc.link++;
         }
@@ -571,12 +579,23 @@ export default function CaixaMogi({ user, onLogout }) {
     setVendaSelecionada(venda);
     
     try {
-      const { data: itens } = await supabase
-        .from('itens_venda_mogi')
-        .select('*')
-        .eq('venda_id', venda.id);
-      
-      setItensVenda(itens || []);
+      if (!venda.id) {
+        console.error('ID da venda não encontrado:', venda);
+        setItensVenda([]);
+      } else {
+        const { data: itens, error } = await supabase
+          .from('itens_venda_mogi')
+          .select('*')
+          .eq('venda_id', venda.id);
+        
+        if (error) {
+          console.error('Erro ao carregar itens:', error);
+          setItensVenda([]);
+        } else {
+          console.log('Itens carregados:', itens);
+          setItensVenda(itens || []);
+        }
+      }
     } catch (error) {
       console.error('Erro ao carregar itens Mogi:', error);
       setItensVenda([]);
@@ -694,6 +713,11 @@ Obrigado pela preferência!`;
 
   const editarVenda = async (venda) => {
     try {
+      if (!venda.id) {
+        alert('Erro: ID da venda não encontrado');
+        return;
+      }
+      
       const { data: itens } = await supabase
         .from('itens_venda_mogi')
         .select('*')
@@ -806,6 +830,11 @@ Obrigado pela preferência!`;
   
   const confirmarCancelamentoMultiplo = async (venda) => {
     try {
+      if (!venda.id) {
+        setCancelLogs(prev => [...prev, `❌ Erro: ID da venda ${venda.numero_venda} não encontrado`]);
+        return;
+      }
+      
       setCancelLogs(prev => [...prev, `🔍 Cancelando venda ${venda.numero_venda}...`]);
       
       // Buscar itens da venda para repor estoque
@@ -818,6 +847,8 @@ Obrigado pela preferência!`;
 
       // Repor estoque dos produtos
       for (const item of itens || []) {
+        if (!item.produto_id) continue;
+        
         const { data: produto } = await supabase
           .from('produtos_mogi')
           .select('estoque_atual')
@@ -848,10 +879,15 @@ Obrigado pela preferência!`;
       }
       
       // Marcar venda como cancelada
-      await supabase
+      const { error: updateError } = await supabase
         .from('vendas_mogi')
         .update({ status: 'cancelada' })
         .eq('id', venda.id);
+        
+      if (updateError) {
+        setCancelLogs(prev => [...prev, `❌ Erro ao cancelar ${venda.numero_venda}: ${updateError.message}`]);
+        return;
+      }
 
       setCancelLogs(prev => [...prev, `✅ ${venda.numero_venda} cancelada!`]);
       
@@ -930,27 +966,17 @@ Obrigado pela preferência!`;
         })
         .eq('id', vendaSelecionada.id);
       
-      if (vendaError) throw vendaError;
+      if (vendaError) {
+        console.error('Erro ao atualizar venda:', vendaError);
+        throw vendaError;
+      }
       
       // Registrar no caixa
       if (pagamentoMisto) {
         const formasAtivas = formasPagamento.filter(f => f.ativo && f.valor > 0);
-        for (const forma of formasAtivas) {
-          await supabase
-            .from('caixa_mogi')
-            .insert([{
-              tipo: 'entrada',
-              valor: forma.valor,
-              valor_pago: forma.valor,
-              troco: forma.tipo === 'dinheiro' ? trocoFinal : 0,
-              forma_pagamento: forma.tipo,
-              descricao: `Venda ${vendaSelecionada.numero_venda} (${forma.tipo.toUpperCase()}: ${formatMoney(forma.valor)})${forma.tipo === 'dinheiro' && trocoFinal > 0 ? ` - Troco: ${formatMoney(trocoFinal)}` : ''}`,
-              venda_id: vendaSelecionada.id,
-              usuario_id: user.id
-            }]);
-        }
-      } else {
-        const { error: caixaError } = await supabase
+        
+        // Registrar uma única entrada no caixa com o valor total
+        await supabase
           .from('caixa_mogi')
           .insert([{
             tipo: 'entrada',
@@ -958,6 +984,23 @@ Obrigado pela preferência!`;
             valor_pago: valorRecebidoFinal,
             troco: trocoFinal,
             forma_pagamento: formaPagamentoFinal,
+            descricao: `Venda ${vendaSelecionada.numero_venda} (Pagamento Misto)${trocoFinal > 0 ? ` - Troco: ${formatMoney(trocoFinal)}` : ''}`,
+            venda_id: vendaSelecionada.id,
+            usuario_id: user.id
+          }]);
+      } else {
+        let descricaoForma = metodoPagamento;
+        if (metodoPagamento === 'cartao_credito') descricaoForma = 'credito';
+        if (metodoPagamento === 'cartao_debito') descricaoForma = 'debito';
+        
+        const { error: caixaError } = await supabase
+          .from('caixa_mogi')
+          .insert([{
+            tipo: 'entrada',
+            valor: novoTotal,
+            valor_pago: valorRecebidoFinal,
+            troco: trocoFinal,
+            forma_pagamento: descricaoForma,
             descricao: `Venda ${vendaSelecionada.numero_venda}${trocoFinal > 0 ? ` (Pago: ${formatMoney(valorRecebidoFinal)}, Troco: ${formatMoney(trocoFinal)})` : ''}`,
             venda_id: vendaSelecionada.id,
             usuario_id: user.id
@@ -1099,14 +1142,16 @@ Obrigado pela preferência!`;
                         type="checkbox"
                         checked={vendasSelecionadas.includes(venda.id)}
                         onChange={(e) => {
+                          e.stopPropagation();
                           if (e.target.checked) {
-                            setVendasSelecionadas([...vendasSelecionadas, venda.id]);
+                            setVendasSelecionadas(prev => [...prev, venda.id]);
                           } else {
-                            setVendasSelecionadas(vendasSelecionadas.filter(id => id !== venda.id));
+                            setVendasSelecionadas(prev => prev.filter(id => id !== venda.id));
                           }
                         }}
+                        onClick={(e) => e.stopPropagation()}
                       />
-                      {venda.vendedor_nome}
+                      <span>{venda.vendedor_nome}</span>
                     </div>
                     <div>{venda.cliente_nome}</div>
                     <div>{formatCurrency(venda.valor_final || venda.valor_total)}</div>
