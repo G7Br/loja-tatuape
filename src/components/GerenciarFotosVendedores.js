@@ -151,7 +151,7 @@ const ActionButtons = styled.div`
   }
 `;
 
-export default function GerenciarFotosVendedores({ vendedores, onUpdateFoto, supabase }) {
+export default function GerenciarFotosVendedores({ vendedores, onUpdateFoto, supabase, loja = 'tatuape' }) {
   const [uploading, setUploading] = useState({});
 
   const handleFileSelect = async (vendedorId, file) => {
@@ -178,8 +178,9 @@ export default function GerenciarFotosVendedores({ vendedores, onUpdateFoto, sup
         const base64 = e.target.result;
         
         // Atualizar no banco de dados
+        const tabela = loja === 'mogi' ? 'usuarios_mogi' : 'usuarios_tatuape';
         const { error } = await supabase
-          .from(window.location.pathname.includes('mogi') ? 'usuarios_mogi' : 'usuarios_tatuape')
+          .from(tabela)
           .update({ foto_url: base64 })
           .eq('id', vendedorId);
 
@@ -213,8 +214,9 @@ export default function GerenciarFotosVendedores({ vendedores, onUpdateFoto, sup
     setUploading(prev => ({ ...prev, [vendedorId]: true }));
 
     try {
+      const tabela = loja === 'mogi' ? 'usuarios_mogi' : 'usuarios_tatuape';
       const { error } = await supabase
-        .from(window.location.pathname.includes('mogi') ? 'usuarios_mogi' : 'usuarios_tatuape')
+        .from(tabela)
         .update({ foto_url: null })
         .eq('id', vendedorId);
 

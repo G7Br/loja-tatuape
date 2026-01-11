@@ -97,9 +97,24 @@ export default function SeparadorOnlineNovo({ user, onLogout }) {
         observacoes: `SEPARADO POR: ${user.nome} | ORIGINAL: ${pedidoSelecionado.observacoes || ''}`
       };
 
+      // Determinar a loja de destino baseada nos produtos do carrinho
+      const carrinhoDestino = JSON.parse(pedidoSelecionado.carrinho || '[]');
+      let lojaDestino = 'tatuape'; // padrão
+      
+      // Se todos os produtos são de Mogi, direcionar para Mogi
+      if (carrinhoDestino.length > 0) {
+        const produtosMogi = carrinhoDestino.filter(item => item.loja_origem === 'mogi' || item.codigo?.includes('M'));
+        const produtosTatuape = carrinhoDestino.filter(item => item.loja_origem === 'tatuape' || !item.codigo?.includes('M'));
+        
+        // Se a maioria dos produtos é de Mogi, direcionar para Mogi
+        if (produtosMogi.length > produtosTatuape.length) {
+          lojaDestino = 'mogi';
+        }
+      }
+      
       // Inserir na tabela de vendas da loja correspondente
-      const supabaseClient = pedidoSelecionado.loja === 'mogi' ? supabaseMogi : supabase;
-      const tabelaVendas = `vendas_${pedidoSelecionado.loja}`;
+      const supabaseClient = lojaDestino === 'mogi' ? supabaseMogi : supabase;
+      const tabelaVendas = `vendas_${lojaDestino}`;
 
       const { data: venda, error: vendaError } = await supabaseClient
         .from(tabelaVendas)
@@ -110,8 +125,8 @@ export default function SeparadorOnlineNovo({ user, onLogout }) {
       if (vendaError) throw vendaError;
 
       // Inserir itens da venda
-      if (carrinho.length > 0) {
-        const itens = carrinho.map(item => ({
+      if (carrinhoDestino.length > 0) {
+        const itens = carrinhoDestino.map(item => ({
           venda_id: venda.id,
           produto_codigo: item.codigo,
           produto_nome: item.nome,
@@ -121,30 +136,31 @@ export default function SeparadorOnlineNovo({ user, onLogout }) {
         }));
 
         const { error: itensError } = await supabaseClient
-          .from(`itens_venda_${pedidoSelecionado.loja}`)
+          .from(`itens_venda_${lojaDestino}`)
           .insert(itens);
 
         if (itensError) throw itensError;
 
         // Baixar estoque apenas dos produtos da mesma loja
-        for (const item of carrinho) {
-          if (item.loja_origem === pedidoSelecionado.loja) {
+        for (const item of carrinhoDestino) {
+          if (item.loja_origem === lojaDestino || (lojaDestino === 'mogi' && item.codigo?.includes('M')) || (lojaDestino === 'tatuape' && !item.codigo?.includes('M'))) {
             const novoEstoque = item.estoque_atual - item.quantidade;
             await supabaseClient
-              .from(`produtos_${pedidoSelecionado.loja}`)
+              .from(`produtos_${lojaDestino}`)
               .update({ estoque_atual: novoEstoque })
               .eq('id', item.id);
           }
         }
       }
 
-      // Remover do standby
-      await supabaseClient
+      // Remover do standby da loja original
+      const supabaseOriginal = pedidoSelecionado.loja === 'mogi' ? supabaseMogi : supabase;
+      await supabaseOriginal
         .from(`vendas_standby_${pedidoSelecionado.loja}`)
         .delete()
         .eq('id', pedidoSelecionado.id);
 
-      alert(`Separação finalizada! Venda ${numeroVenda} criada.`);
+      alert(`Separação finalizada! Venda ${numeroVenda} criada na loja ${lojaDestino.toUpperCase()}.`);
       
       setPedidoSelecionado(null);
       carregarPedidos();

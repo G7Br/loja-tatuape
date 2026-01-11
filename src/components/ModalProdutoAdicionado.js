@@ -73,6 +73,44 @@ export default function ModalProdutoAdicionado({ produto, isOpen, onContinuar, o
           </div>
           
           <div style={{
+            fontSize: '0.9rem',
+            color: darkMode ? '#888' : '#666',
+            marginBottom: '0.5rem'
+          }}>
+            🏷️ Código: {produto.codigo}
+          </div>
+          
+          {produto.tipo && (
+            <div style={{
+              fontSize: '0.9rem',
+              color: darkMode ? '#888' : '#666',
+              marginBottom: '0.5rem'
+            }}>
+              📋 Tipo: {produto.tipo}
+            </div>
+          )}
+          
+          {produto.tamanho && (
+            <div style={{
+              fontSize: '0.9rem',
+              color: darkMode ? '#888' : '#666',
+              marginBottom: '0.5rem'
+            }}>
+              📏 Tamanho: {produto.tamanho}
+            </div>
+          )}
+          
+          {produto.cor && (
+            <div style={{
+              fontSize: '0.9rem',
+              color: darkMode ? '#888' : '#666',
+              marginBottom: '0.5rem'
+            }}>
+              🎨 Cor: {produto.cor}
+            </div>
+          )}
+          
+          <div style={{
             fontSize: '1.3rem',
             fontWeight: '700',
             color: '#10b981',
@@ -83,7 +121,8 @@ export default function ModalProdutoAdicionado({ produto, isOpen, onContinuar, o
           
           <div style={{
             fontSize: '0.9rem',
-            color: darkMode ? '#888' : '#666'
+            color: produto.estoque_atual < 5 ? '#f59e0b' : '#10b981',
+            fontWeight: '600'
           }}>
             📊 Estoque: {produto.estoque_atual} unidades
           </div>

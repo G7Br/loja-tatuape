@@ -38,6 +38,8 @@ export default function VendedorMobileMogi({ user, onLogout }) {
   const [codigoErro, setCodigoErro] = useState('');
   const [showModalErro, setShowModalErro] = useState(false);
   const [showModalCliente, setShowModalCliente] = useState(false);
+  const [codigoBusca, setCodigoBusca] = useState('');
+  const [produtoEncontrado, setProdutoEncontrado] = useState(null);
 
   useEffect(() => {
     carregarProdutos();
@@ -79,6 +81,37 @@ export default function VendedorMobileMogi({ user, onLogout }) {
       }, { onConflict: 'telefone' });
     
     if (error) console.error('Erro ao cadastrar cliente:', error);
+  };
+
+  const buscarProdutoPorCodigo = async (codigo) => {
+    if (!codigo.trim()) {
+      setProdutoEncontrado(null);
+      return;
+    }
+    
+    try {
+      const { data } = await queryWithStoreMogi('produtos')
+        .select('*')
+        .eq('codigo', codigo.trim())
+        .eq('ativo', true)
+        .single();
+      
+      if (data) {
+        setProdutoEncontrado(data);
+      } else {
+        setProdutoEncontrado(null);
+        alert('Produto não encontrado!');
+      }
+    } catch (error) {
+      setProdutoEncontrado(null);
+      alert('Produto não encontrado!');
+    }
+  };
+
+  const adicionarProdutoEncontrado = (produto) => {
+    adicionarAoCarrinho(produto);
+    setCodigoBusca('');
+    setProdutoEncontrado(null);
   };
 
   const carregarProdutos = async () => {
@@ -633,6 +666,99 @@ export default function VendedorMobileMogi({ user, onLogout }) {
       <div style={{ flex: 1, padding: '1rem', paddingBottom: '5rem' }}>
         {activeTab === 'produtos' && (
           <>
+            {/* BUSCA POR CÓDIGO */}
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <input
+                  placeholder="Digite o código do produto"
+                  value={codigoBusca}
+                  onChange={(e) => setCodigoBusca(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && buscarProdutoPorCodigo(codigoBusca)}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    background: darkMode ? '#2a2a2a' : '#f8f9fa',
+                    border: `2px solid ${codigoBusca ? '#3b82f6' : (darkMode ? '#333' : '#e5e7eb')}`,
+                    borderRadius: '8px',
+                    color: darkMode ? '#ffffff' : '#000000',
+                    fontSize: '16px'
+                  }}
+                />
+                <button
+                  onClick={() => buscarProdutoPorCodigo(codigoBusca)}
+                  style={{
+                    padding: '12px 16px',
+                    background: '#3b82f6',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '1rem'
+                  }}
+                >
+                  🔍
+                </button>
+              </div>
+              
+              {produtoEncontrado && (
+                <div style={{
+                  background: darkMode ? '#1a1a1a' : '#ffffff',
+                  border: '2px solid #10b981',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{ color: '#10b981', fontWeight: '600', marginBottom: '0.5rem' }}>
+                    ✅ Produto Encontrado
+                  </div>
+                  <div style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem' }}>
+                    {produtoEncontrado.nome}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: darkMode ? '#888' : '#666', marginBottom: '0.5rem' }}>
+                    Código: {produtoEncontrado.codigo}
+                  </div>
+                  {produtoEncontrado.tipo && (
+                    <div style={{ fontSize: '0.8rem', color: darkMode ? '#888' : '#666', marginBottom: '0.5rem' }}>
+                      Tipo: {produtoEncontrado.tipo}
+                    </div>
+                  )}
+                  {produtoEncontrado.tamanho && (
+                    <div style={{ fontSize: '0.8rem', color: darkMode ? '#888' : '#666', marginBottom: '0.5rem' }}>
+                      Tamanho: {produtoEncontrado.tamanho}
+                    </div>
+                  )}
+                  {produtoEncontrado.cor && (
+                    <div style={{ fontSize: '0.8rem', color: darkMode ? '#888' : '#666', marginBottom: '0.5rem' }}>
+                      Cor: {produtoEncontrado.cor}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '0.8rem', color: produtoEncontrado.estoque_atual < 5 ? '#f59e0b' : '#10b981', fontWeight: '600', marginBottom: '0.5rem' }}>
+                    Estoque: {produtoEncontrado.estoque_atual} unidades
+                  </div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#10b981', marginBottom: '1rem' }}>
+                    R$ {produtoEncontrado.preco_venda.toFixed(2)}
+                  </div>
+                  <button
+                    onClick={() => adicionarProdutoEncontrado(produtoEncontrado)}
+                    disabled={produtoEncontrado.estoque_atual === 0}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      background: produtoEncontrado.estoque_atual === 0 ? '#666' : '#10b981',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: produtoEncontrado.estoque_atual === 0 ? 'not-allowed' : 'pointer',
+                      fontSize: '1rem',
+                      fontWeight: '600'
+                    }}
+                  >
+                    ➕ Adicionar ao Carrinho
+                  </button>
+                </div>
+              )}
+            </div>
+            
             {/* BUSCA E QR SCANNER */}
             <div style={{ marginBottom: '1rem' }}>
               <div style={{ position: 'relative', marginBottom: '0.5rem' }}>

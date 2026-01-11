@@ -1665,6 +1665,7 @@ export default function Gerente({ user, onLogout }) {
               ));
             }}
             supabase={supabase}
+            loja="mogi"
           />
         )}
 

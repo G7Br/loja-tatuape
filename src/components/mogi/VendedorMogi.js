@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase, queryWithStore } from '../../utils/supabase';
 import { createBrasiliaTimestamp } from '../../utils/dateUtils';
@@ -97,6 +97,8 @@ export default function VendedorMogi({ user, onLogout }) {
     nome_completo: '',
     telefone: ''
   });
+  const [codigoBusca, setCodigoBusca] = useState('');
+  const [produtoEncontrado, setProdutoEncontrado] = useState(null);
 
   useEffect(() => {
     carregarProdutos();
@@ -121,6 +123,31 @@ export default function VendedorMogi({ user, onLogout }) {
     }
   };
 
+  const buscarProduto = async (codigo) => {
+    if (!codigo.trim()) {
+      setProdutoEncontrado(null);
+      return;
+    }
+    
+    try {
+      const { data } = await queryWithStoreMogi('produtos')
+        .select('*')
+        .eq('codigo', codigo.trim())
+        .eq('ativo', true)
+        .single();
+      
+      if (data) {
+        setProdutoEncontrado(data);
+      } else {
+        setProdutoEncontrado(null);
+        alert('Produto não encontrado!');
+      }
+    } catch (error) {
+      setProdutoEncontrado(null);
+      alert('Produto não encontrado!');
+    }
+  };
+
   const adicionarProduto = (produto) => {
     const itemExistente = carrinho.find(item => item.id === produto.id);
     
@@ -137,6 +164,10 @@ export default function VendedorMogi({ user, onLogout }) {
     } else {
       setCarrinho([...carrinho, { ...produto, quantidade: 1 }]);
     }
+    
+    // Limpar busca após adicionar
+    setCodigoBusca('');
+    setProdutoEncontrado(null);
   };
 
   const finalizarVenda = async () => {
@@ -146,12 +177,12 @@ export default function VendedorMogi({ user, onLogout }) {
     }
 
     if (!cliente.nome_completo.trim()) {
-      alert('Nome do cliente Ã© obrigatÃ³rio!');
+      alert('Nome do cliente é obrigatório!');
       return;
     }
 
     if (!cliente.telefone.trim()) {
-      alert('Telefone do cliente Ã© obrigatÃ³rio!');
+      alert('Telefone do cliente é obrigatório!');
       return;
     }
 
@@ -189,14 +220,14 @@ export default function VendedorMogi({ user, onLogout }) {
 
       await queryWithStoreMogi('itens_venda').insert(itens);
 
-      alert(`âœ… Venda criada com sucesso!\n\nNÃºmero: ${numeroVenda}\nTotal: R$ ${valorTotal.toFixed(2)}\n\nDirecione o cliente ao caixa para finalizar o pagamento.`);
+      alert(`✅ Venda criada com sucesso!\n\nNúmero: ${numeroVenda}\nTotal: R$ ${valorTotal.toFixed(2)}\n\nDirecione o cliente ao caixa para finalizar o pagamento.`);
       
       setCarrinho([]);
       setCliente({ nome_completo: '', telefone: '' });
       
     } catch (error) {
       console.error('Erro ao finalizar venda:', error);
-      alert('âŒ Erro ao criar venda: ' + error.message);
+      alert('❌ Erro ao criar venda: ' + error.message);
     }
   };
 
@@ -217,7 +248,7 @@ export default function VendedorMogi({ user, onLogout }) {
       <Header darkMode={darkMode}>
         <div>
           <h1 style={{ margin: 0, fontSize: '1.5rem' }}>
-            ðŸ›ï¸ Vendedor - {user.nome} (Mogi)
+            🛒 Vendedor - {user.nome} (Mogi)
           </h1>
           <p style={{ margin: '0.25rem 0 0 0', color: '#888', fontSize: '0.9rem' }}>
             Crie vendas e direcione clientes ao caixa
@@ -242,18 +273,87 @@ export default function VendedorMogi({ user, onLogout }) {
             cursor: 'pointer',
             fontSize: '1.2rem'
           }}>
-            {darkMode ? 'â˜€ï¸' : 'ðŸŒ™'}
+            {darkMode ? '☀️' : '🌙'}
           </button>
           <Button onClick={() => setShowProfile(true)}>
-            ðŸ‘¤ Perfil
+            👤 Perfil
           </Button>
           <Button variant="danger" onClick={onLogout}>
-            ðŸšª Sair
+            🚪 Sair
           </Button>
         </div>
       </Header>
 
       <MainContent>
+        <div style={{ marginBottom: '2rem' }}>
+          <h3 style={{ color: darkMode ? '#fff' : '#000', marginBottom: '1rem' }}>
+            Buscar Produto por Código/QR
+          </h3>
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', maxWidth: '600px' }}>
+            <input
+              type="text"
+              placeholder="Digite ou escaneie o código do produto"
+              value={codigoBusca}
+              onChange={(e) => setCodigoBusca(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && buscarProduto(codigoBusca)}
+              style={{
+                flex: 1,
+                padding: '0.75rem',
+                border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
+                borderRadius: '0.5rem',
+                background: darkMode ? '#2a2a2a' : '#ffffff',
+                color: darkMode ? '#fff' : '#000'
+              }}
+            />
+            <Button onClick={() => buscarProduto(codigoBusca)}>
+              🔍 Buscar
+            </Button>
+          </div>
+          
+          {produtoEncontrado && (
+            <div style={{
+              background: darkMode ? '#1a1a1a' : '#ffffff',
+              border: '2px solid #10b981',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+              marginBottom: '1rem',
+              maxWidth: '600px'
+            }}>
+              <h4 style={{ color: '#10b981', margin: '0 0 1rem 0' }}>✅ Produto Encontrado</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1rem', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ color: darkMode ? '#fff' : '#000', margin: '0 0 0.5rem 0' }}>
+                    {produtoEncontrado.nome}
+                  </h3>
+                  <p style={{ color: '#888', margin: '0 0 0.5rem 0' }}>Código: {produtoEncontrado.codigo}</p>
+                  {produtoEncontrado.tipo && (
+                    <p style={{ color: '#888', margin: '0 0 0.5rem 0' }}>Tipo: {produtoEncontrado.tipo}</p>
+                  )}
+                  {produtoEncontrado.tamanho && (
+                    <p style={{ color: '#888', margin: '0 0 0.5rem 0' }}>Tamanho: {produtoEncontrado.tamanho}</p>
+                  )}
+                  {produtoEncontrado.cor && (
+                    <p style={{ color: '#888', margin: '0 0 0.5rem 0' }}>Cor: {produtoEncontrado.cor}</p>
+                  )}
+                  <p style={{ color: produtoEncontrado.estoque_atual < 5 ? '#f59e0b' : '#10b981', margin: '0 0 0.5rem 0', fontWeight: '600' }}>
+                    Estoque: {produtoEncontrado.estoque_atual} unidades
+                  </p>
+                  <p style={{ color: '#10b981', fontSize: '1.2rem', fontWeight: '700', margin: 0 }}>
+                    R$ {produtoEncontrado.preco_venda.toFixed(2)}
+                  </p>
+                </div>
+                <Button
+                  variant="success"
+                  onClick={() => adicionarProduto(produtoEncontrado)}
+                  disabled={produtoEncontrado.estoque_atual === 0}
+                >
+                  ➕ Adicionar
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div style={{ marginBottom: '2rem' }}>
           <h3 style={{ color: darkMode ? '#fff' : '#000', marginBottom: '1rem' }}>
             Dados do Cliente
@@ -290,14 +390,14 @@ export default function VendedorMogi({ user, onLogout }) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h3 style={{ color: darkMode ? '#fff' : '#000', margin: 0 }}>
-            Produtos DisponÃ­veis
+            Produtos Disponíveis
           </h3>
           <Button
             variant="success"
             onClick={finalizarVenda}
             disabled={carrinho.length === 0 || !cliente.nome_completo.trim() || !cliente.telefone.trim()}
           >
-            âœ… Finalizar Venda ({carrinho.length} itens)
+            ✅ Finalizar Venda ({carrinho.length} itens)
           </Button>
         </div>
 
@@ -314,7 +414,7 @@ export default function VendedorMogi({ user, onLogout }) {
                 marginBottom: '1rem',
                 fontSize: '3rem'
               }}>
-                ðŸ“¦
+                📦
               </div>
               
               <h4 style={{ 
@@ -354,7 +454,7 @@ export default function VendedorMogi({ user, onLogout }) {
                 onClick={() => adicionarProduto(produto)}
                 style={{ width: '100%' }}
               >
-                âž• Adicionar ao Carrinho
+                ➕ Adicionar ao Carrinho
               </Button>
               
               {carrinho.find(item => item.id === produto.id) && (
@@ -377,9 +477,9 @@ export default function VendedorMogi({ user, onLogout }) {
 
         {produtos.length === 0 && (
           <div style={{ textAlign: 'center', padding: '4rem', color: '#888' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>ðŸ“¦</div>
-            <h3>Nenhum produto disponÃ­vel</h3>
-            <p>NÃ£o hÃ¡ produtos com estoque no momento.</p>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📦</div>
+            <h3>Nenhum produto disponível</h3>
+            <p>Não há produtos com estoque no momento.</p>
           </div>
         )}
       </MainContent>

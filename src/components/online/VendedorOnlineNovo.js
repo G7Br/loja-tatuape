@@ -189,9 +189,23 @@ export default function VendedorOnlineNovo({ user, onLogout }) {
         endereco: clienteEndereco || null
       };
 
-      // Inserir/atualizar cliente na loja Tatuapé
-      await supabase
-        .from('clientes_tatuape')
+      // Determinar a loja de destino baseada nos produtos do carrinho
+      let lojaDestino = 'tatuape'; // padrão
+      
+      if (carrinho.length > 0) {
+        const produtosMogi = carrinho.filter(item => item.loja_origem === 'mogi');
+        const produtosTatuape = carrinho.filter(item => item.loja_origem === 'tatuape');
+        
+        // Se a maioria dos produtos é de Mogi, direcionar para Mogi
+        if (produtosMogi.length > produtosTatuape.length) {
+          lojaDestino = 'mogi';
+        }
+      }
+      
+      // Inserir/atualizar cliente na loja correspondente
+      const supabaseClient = lojaDestino === 'mogi' ? supabaseMogi : supabase;
+      await supabaseClient
+        .from(`clientes_${lojaDestino}`)
         .upsert(clienteCompleto, { onConflict: 'telefone' });
 
       // Preparar dados da venda online
@@ -203,11 +217,11 @@ export default function VendedorOnlineNovo({ user, onLogout }) {
         cliente_cidade: clienteCidade || null,
         carrinho: JSON.stringify(carrinho),
         valor_total: calcularTotal(),
-        observacoes: `VENDA ONLINE - Tipo: ${tipoEnvio} | Endereço: ${clienteEndereco} | Separador: PENDENTE`
+        observacoes: `VENDA ONLINE - Tipo: ${tipoEnvio} | Endereço: ${clienteEndereco} | Separador: PENDENTE | Loja: ${lojaDestino.toUpperCase()}`
       };
 
-      const { error } = await supabase
-        .from('vendas_standby_tatuape')
+      const { error } = await supabaseClient
+        .from(`vendas_standby_${lojaDestino}`)
         .insert([vendaData]);
 
       if (error) throw error;
@@ -222,7 +236,7 @@ export default function VendedorOnlineNovo({ user, onLogout }) {
       setTipoEnvio('retirada');
       setActiveTab('produtos');
       
-      alert('Pedido enviado para separação com sucesso!');
+      alert(`Pedido enviado para separação na loja ${lojaDestino.toUpperCase()} com sucesso!`);
       carregarPedidos();
     } catch (error) {
       console.error('Erro ao finalizar venda:', error);
