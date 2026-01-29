@@ -4,6 +4,8 @@ import { supabase } from '../../utils/supabase';
 import { useTheme } from '../../contexts/ThemeContext';
 import { renderEstoquePage, renderSaidaValoresPage, renderVendedoresPage } from '../CaixaPages';
 import ComprovanteVendaMogi from './ComprovanteVendaMogi';
+import SistemaDevolucaoMogi from './SistemaDevolucaoMogi';
+import HistoricoDevolucoesMogi from './HistoricoDevolucoesMogi';
 import CaixaControllerMogi from './CaixaControllerMogi';
 import SistemaVendasMogi from './SistemaVendasMogi_fixed';
 import HistoricoCaixaMogi from './HistoricoCaixaMogi';
@@ -320,6 +322,7 @@ export default function CaixaMogi({ user, onLogout }) {
   const [showComprovante, setShowComprovante] = useState(false);
   const [relatorioFechamento, setRelatorioFechamento] = useState(null);
   const [showSistemaVendas, setShowSistemaVendas] = useState(false);
+  const [showSistemaDevolucao, setShowSistemaDevolucao] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelLogs, setCancelLogs] = useState([]);
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
@@ -1076,10 +1079,12 @@ Obrigado pela preferência!`;
   const menuItems = [
     { id: 'vendas', label: 'Vendas', icon: '💰' },
     { id: 'nova-venda', label: 'Nova Venda', icon: '🛍️' },
+    { id: 'devolucoes', label: 'Devoluções', icon: '🔄' },
     { id: 'estoque', label: 'Estoque', icon: '📦' },
     { id: 'saida-valores', label: 'Saída de Valores', icon: '💸' },
     { id: 'vendedores', label: 'Vendedores', icon: '👥' },
     { id: 'historico', label: 'Histórico', icon: '📋' },
+    { id: 'historico-devolucoes', label: 'Histórico Devoluções', icon: '🔄' },
     { id: 'historico-caixa', label: 'Histórico Caixa', icon: '📊' },
     { id: 'caixa', label: 'Controle de Caixa', icon: '💳' }
   ];
@@ -1299,7 +1304,44 @@ Obrigado pela preferência!`;
           </div>
         );
       
-      case 'nova-venda':
+      case 'devolucoes':
+        return (
+          <div style={{ textAlign: 'center', padding: '4rem' }}>
+            <div style={{
+              background: darkMode ? '#1a1a1a' : '#ffffff',
+              border: `2px solid #f59e0b`,
+              borderRadius: '1rem',
+              padding: '3rem',
+              maxWidth: '500px',
+              margin: '0 auto'
+            }}>
+              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🔄</div>
+              <h2 style={{ color: '#f59e0b', marginBottom: '1rem' }}>Sistema de Devoluções - Mogi</h2>
+              <p style={{ color: darkMode ? '#888' : '#666', marginBottom: '2rem' }}>
+                Processe devoluções integrais, parciais e trocas de produtos.
+              </p>
+              <button
+                onClick={() => setShowSistemaDevolucao(true)}
+                style={{
+                  padding: '1rem 2rem',
+                  background: '#f59e0b',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '1.1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  margin: '0 auto'
+                }}
+              >
+                🔄 Iniciar Devolução/Troca
+              </button>
+            </div>
+          </div>
+        );
         if (!caixaAberto) {
           return (
             <div style={{padding: '4rem', textAlign: 'center'}}>
@@ -1525,6 +1567,9 @@ Obrigado pela preferência!`;
             )}
           </div>
         );
+      
+      case 'historico-devolucoes':
+        return <HistoricoDevolucoesMogi darkMode={darkMode} />;
       
       case 'caixa':
         return <CaixaControllerMogi user={user} darkMode={darkMode} />;
@@ -3597,6 +3642,17 @@ Obrigado pela preferência!`;
             </div>
           </div>
         </div>
+      )}
+
+      {showSistemaDevolucao && (
+        <SistemaDevolucaoMogi 
+          user={user}
+          darkMode={darkMode}
+          onClose={() => {
+            setShowSistemaDevolucao(false);
+            carregarDados();
+          }}
+        />
       )}
 
       {showComprovante && vendaFinalizada && (
