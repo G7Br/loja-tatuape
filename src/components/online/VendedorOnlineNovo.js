@@ -363,7 +363,7 @@ export default function VendedorOnlineNovo({ user, onLogout }) {
                   color: darkMode ? '#888' : '#666',
                   fontSize: '1rem'
                 }}>
-                  🔍
+                  
                 </div>
                 <input
                   placeholder="Buscar produto..."
@@ -440,7 +440,7 @@ export default function VendedorOnlineNovo({ user, onLogout }) {
                   padding: '2rem', 
                   color: darkMode ? '#888' : '#666' 
                 }}>
-                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔍</div>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}></div>
                   <p style={{ margin: 0, fontSize: '0.9rem' }}>
                     {busca ? `Nenhum produto encontrado para "${busca}"` : 'Nenhum produto nesta categoria'}
                   </p>
@@ -505,7 +505,7 @@ export default function VendedorOnlineNovo({ user, onLogout }) {
                           fontSize: '4rem',
                           color: darkMode ? '#666' : '#999'
                         }}>
-                          📷
+                          
                           <div style={{ fontSize: '0.8rem', marginTop: '10px' }}>Sem foto</div>
                         </div>
                         
@@ -827,7 +827,7 @@ export default function VendedorOnlineNovo({ user, onLogout }) {
           <div>
             {pedidos.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '3rem', color: darkMode ? '#888' : '#666' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
                 <h3>Nenhum pedido encontrado</h3>
                 <p>Seus pedidos online aparecerão aqui</p>
               </div>

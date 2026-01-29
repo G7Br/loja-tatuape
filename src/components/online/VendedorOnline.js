@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { onlineService } from '../../utils/onlineService';
+import { caixaOnlineService } from '../../utils/caixaOnlineService';
 
 const Container = styled.div`
   width: 100%;
@@ -90,6 +91,15 @@ export default function VendedorOnline({ user, onLogout }) {
   const [pedidos, setPedidos] = useState([]);
   const [carrinho, setCarrinho] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [clienteData, setClienteData] = useState({
+    cliente_nome: '',
+    cliente_cpf: '',
+    cliente_telefone: '',
+    cliente_endereco: '',
+    tipo_envio: 'retirada',
+    observacoes: ''
+  });
+  const [modalFinalizacao, setModalFinalizacao] = useState(false);
 
   useEffect(() => {
     carregarDados();
@@ -99,7 +109,7 @@ export default function VendedorOnline({ user, onLogout }) {
     try {
       const [produtosData, pedidosData] = await Promise.all([
         onlineService.getProdutosOnline({ disponivel: true }),
-        onlineService.getPedidos({ vendedor_id: user.id })
+        caixaOnlineService.buscarVendasVendedor(user.id)
       ]);
       
       setProdutos(produtosData);
@@ -138,6 +148,45 @@ export default function VendedorOnline({ user, onLogout }) {
       style: 'currency',
       currency: 'BRL'
     }).format(valor || 0);
+  };
+
+  const finalizarPedido = async () => {
+    if (!clienteData.cliente_nome || !clienteData.cliente_cpf || !clienteData.cliente_telefone) {
+      alert('Preencha todos os campos obrigatórios do cliente');
+      return;
+    }
+
+    if (carrinho.length === 0) {
+      alert('Carrinho está vazio');
+      return;
+    }
+
+    try {
+      const valorTotal = carrinho.reduce((sum, item) => sum + (item.quantidade * item.preco_unitario), 0);
+      
+      const dadosVenda = {
+        ...clienteData,
+        valor_total: valorTotal,
+        itens: carrinho
+      };
+
+      await caixaOnlineService.criarVenda(dadosVenda, user.id, user.email);
+      
+      alert('Venda criada com sucesso! Status: CRIADA');
+      setCarrinho([]);
+      setClienteData({
+        cliente_nome: '',
+        cliente_cpf: '',
+        cliente_telefone: '',
+        cliente_endereco: '',
+        tipo_envio: 'retirada',
+        observacoes: ''
+      });
+      setModalFinalizacao(false);
+      carregarDados();
+    } catch (error) {
+      alert('Erro ao criar venda: ' + error.message);
+    }
   };
 
   if (loading) {
@@ -541,7 +590,7 @@ export default function VendedorOnline({ user, onLogout }) {
                       <Button className="danger" onClick={() => setCarrinho([])}>
                         Limpar Carrinho
                       </Button>
-                      <Button className="success">
+                      <Button className="success" onClick={() => setModalFinalizacao(true)}>
                         Finalizar Pedido
                       </Button>
                     </div>
@@ -565,14 +614,14 @@ export default function VendedorOnline({ user, onLogout }) {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ 
-                      background: onlineService.getCorStatus(pedido.status),
+                      background: caixaOnlineService.getCorStatus(pedido.status),
                       color: 'white',
                       padding: '4px 8px',
                       borderRadius: '4px',
                       fontSize: '0.8rem',
                       marginBottom: '10px'
                     }}>
-                      {onlineService.formatarStatus(pedido.status)}
+                      {caixaOnlineService.formatarStatus(pedido.status)}
                     </div>
                     <div style={{ fontWeight: 'bold' }}>
                       {formatarValor(pedido.valor_total)}
@@ -584,6 +633,182 @@ export default function VendedorOnline({ user, onLogout }) {
           </>
         )}
       </Content>
+
+      {/* Modal de Finalização */}
+      {modalFinalizacao && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#111111',
+            border: '1px solid #333333',
+            borderRadius: '8px',
+            padding: '30px',
+            width: '90%',
+            maxWidth: '500px',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <h2 style={{ marginBottom: '20px' }}>📋 Finalizar Pedido</h2>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <h3>Resumo do Carrinho:</h3>
+              {carrinho.map((item, index) => (
+                <div key={index} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '8px 0',
+                  borderBottom: '1px solid #333'
+                }}>
+                  <span>{item.produto_nome} ({item.quantidade}x)</span>
+                  <span>{formatarValor(item.quantidade * item.preco_unitario)}</span>
+                </div>
+              ))}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '12px 0',
+                fontSize: '1.2rem',
+                fontWeight: 'bold',
+                borderTop: '2px solid #333',
+                marginTop: '10px'
+              }}>
+                <span>Total:</span>
+                <span>{formatarValor(carrinho.reduce((sum, item) => sum + (item.quantidade * item.preco_unitario), 0))}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: '15px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Nome do Cliente *</label>
+                <input
+                  type="text"
+                  value={clienteData.cliente_nome}
+                  onChange={(e) => setClienteData({...clienteData, cliente_nome: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    backgroundColor: '#222',
+                    border: '1px solid #444',
+                    borderRadius: '4px',
+                    color: 'white'
+                  }}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>CPF *</label>
+                <input
+                  type="text"
+                  value={clienteData.cliente_cpf}
+                  onChange={(e) => setClienteData({...clienteData, cliente_cpf: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    backgroundColor: '#222',
+                    border: '1px solid #444',
+                    borderRadius: '4px',
+                    color: 'white'
+                  }}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Telefone *</label>
+                <input
+                  type="text"
+                  value={clienteData.cliente_telefone}
+                  onChange={(e) => setClienteData({...clienteData, cliente_telefone: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    backgroundColor: '#222',
+                    border: '1px solid #444',
+                    borderRadius: '4px',
+                    color: 'white'
+                  }}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Endereço</label>
+                <textarea
+                  value={clienteData.cliente_endereco}
+                  onChange={(e) => setClienteData({...clienteData, cliente_endereco: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    backgroundColor: '#222',
+                    border: '1px solid #444',
+                    borderRadius: '4px',
+                    color: 'white',
+                    minHeight: '80px'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Tipo de Envio</label>
+                <select
+                  value={clienteData.tipo_envio}
+                  onChange={(e) => setClienteData({...clienteData, tipo_envio: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    backgroundColor: '#222',
+                    border: '1px solid #444',
+                    borderRadius: '4px',
+                    color: 'white'
+                  }}
+                >
+                  <option value="retirada">Retirada na Loja</option>
+                  <option value="entrega">Entrega</option>
+                  <option value="correios">Correios</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Observações</label>
+                <textarea
+                  value={clienteData.observacoes}
+                  onChange={(e) => setClienteData({...clienteData, observacoes: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    backgroundColor: '#222',
+                    border: '1px solid #444',
+                    borderRadius: '4px',
+                    color: 'white',
+                    minHeight: '60px'
+                  }}
+                  placeholder="Observações sobre o pedido..."
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
+              <Button className="danger" onClick={() => setModalFinalizacao(false)}>
+                Cancelar
+              </Button>
+              <Button className="success" onClick={finalizarPedido}>
+                Criar Venda (Status: CRIADA)
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Container>
   );
 }

@@ -5,6 +5,7 @@ import Login from '../../components/Login';
 import VendedorOnline from '../../components/online/VendedorOnline';
 import GerenteOnline from '../../components/online/GerenteOnline';
 import SeparadorOnline from '../../components/online/SeparadorOnline';
+import CaixaOnline from '../../components/online/CaixaOnline';
 
 export default function OnlineSystem() {
   const { darkMode } = useTheme();
@@ -14,8 +15,9 @@ export default function OnlineSystem() {
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
     if (currentUser) {
-      const tiposOnline = ['vendedor_online', 'gerente_online', 'separador_online'];
-      if (tiposOnline.includes(currentUser.tipo) || tiposOnline.includes(currentUser.cargo)) {
+      const tiposOnline = ['vendedor_online', 'gerente_online', 'separador_online', 'caixa_online'];
+      const userType = currentUser.tipo_usuario || currentUser.tipo || currentUser.cargo;
+      if (tiposOnline.includes(userType)) {
         setUser(currentUser);
       } else {
         window.location.href = '/';
@@ -26,8 +28,9 @@ export default function OnlineSystem() {
   }, []);
 
   const handleLogin = (userData) => {
-    const tiposOnline = ['vendedor_online', 'gerente_online', 'separador_online'];
-    if (tiposOnline.includes(userData.tipo) || tiposOnline.includes(userData.cargo)) {
+    const tiposOnline = ['vendedor_online', 'gerente_online', 'separador_online', 'caixa_online'];
+    const userType = userData.tipo_usuario || userData.tipo || userData.cargo;
+    if (tiposOnline.includes(userType)) {
       setUser(userData);
     } else {
       alert('Acesso negado. Esta área é restrita ao sistema online.');
@@ -60,7 +63,7 @@ export default function OnlineSystem() {
     return <Login onLogin={handleLogin} />;
   }
 
-  const userType = user.cargo || user.tipo;
+  const userType = user.tipo_usuario || user.cargo || user.tipo;
   
   switch (userType) {
     case 'vendedor_online':
@@ -69,6 +72,8 @@ export default function OnlineSystem() {
       return <GerenteOnline user={user} onLogout={handleLogout} />;
     case 'separador_online':
       return <SeparadorOnline user={user} onLogout={handleLogout} />;
+    case 'caixa_online':
+      return <CaixaOnline user={user} onLogout={handleLogout} />;
     default:
       return (
         <div style={{
@@ -81,7 +86,8 @@ export default function OnlineSystem() {
           flexDirection: 'column',
           gap: '20px'
         }}>
-          <h1>Tipo de usuário online não reconhecido</h1>
+          <h1>Tipo de usuário online não reconhecido: {userType}</h1>
+          <p>Tipos válidos: vendedor_online, gerente_online, separador_online, caixa_online</p>
           <button onClick={handleLogout}>Voltar ao Login</button>
         </div>
       );

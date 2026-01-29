@@ -37,6 +37,11 @@ const redirectUser = (store, cargo) => {
   console.log('Cargo:', cargo);
   console.log('Tipo do cargo:', typeof cargo);
   
+  // Verificar se é usuário online (independente da loja)
+  if (['vendedor_online', 'gerente_online', 'separador_online', 'caixa_online'].includes(cargo)) {
+    return '/online';
+  }
+  
   if (store === 'mogi') {
     let redirectPath;
     switch (cargo) {
@@ -48,9 +53,6 @@ const redirectUser = (store, cargo) => {
         break;
       case 'caixa':
         redirectPath = '/mogi';
-        break;
-      case 'separador_online':
-        redirectPath = '/online/separador';
         break;
       default:
         redirectPath = '/mogi';
@@ -97,8 +99,8 @@ export const authService = {
       console.log('Campo tipo:', data.tipo);
       console.log('Loja detectada:', detectedStore);
       
-      // Usar cargo ou tipo, o que estiver disponível
-      const userRole = data.cargo || data.tipo;
+      // Usar cargo ou tipo_usuario, o que estiver disponível
+      const userRole = data.cargo || data.tipo || data.tipo_usuario;
       console.log('Role final usado:', userRole);
       
       const userWithStore = { ...data, loja: detectedStore || 'tatuape' };

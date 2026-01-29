@@ -283,6 +283,16 @@ export default function Login({ onLogin }) {
       if (error) {
         setError(error);
       } else {
+        // Verificar se é usuário online
+        const userRole = user.cargo || user.tipo || user.tipo_usuario;
+        const tiposOnline = ['vendedor_online', 'gerente_online', 'separador_online', 'caixa_online'];
+        
+        if (tiposOnline.includes(userRole)) {
+          console.log('Usuário online detectado, redirecionando para /online');
+          window.location.href = '/online';
+          return;
+        }
+        
         // Redirecionar automaticamente para a página correta baseada na loja e cargo
         if (redirectTo === 'mogi') {
           console.log('Redirecionando para Mogi:', redirectPath);

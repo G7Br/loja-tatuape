@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { onlineService } from '../../utils/onlineService';
+import { caixaOnlineService } from '../../utils/caixaOnlineService';
 
 const Container = styled.div`
   width: 100%;
@@ -68,11 +68,7 @@ const Button = styled.button`
 
 export default function SeparadorOnline({ user, onLogout }) {
   const [pedidosParaSeparar, setPedidosParaSeparar] = useState([]);
-  const [pedidoAtual, setPedidoAtual] = useState(null);
   const [loading, setLoading] = useState(true);
-  
-  // Determinar loja do separador baseado no email
-  const lojaSeparador = user.email.includes('tatuape') ? 'tatuape' : 'mogi';
 
   useEffect(() => {
     carregarPedidos();
@@ -80,7 +76,7 @@ export default function SeparadorOnline({ user, onLogout }) {
 
   const carregarPedidos = async () => {
     try {
-      const pedidos = await onlineService.getPedidosParaSeparacao(user.id, lojaSeparador);
+      const pedidos = await caixaOnlineService.buscarPedidosParaSeparacao();
       setPedidosParaSeparar(pedidos);
     } catch (error) {
       console.error('Erro ao carregar pedidos:', error);
@@ -89,39 +85,24 @@ export default function SeparadorOnline({ user, onLogout }) {
     }
   };
 
-  const iniciarSeparacao = async (pedido) => {
+  const marcarComoSeparado = async (pedido) => {
     try {
-      await onlineService.iniciarSeparacao(pedido.id, user.id, user.nome, lojaSeparador);
-      setPedidoAtual(pedido);
+      await caixaOnlineService.marcarPedidoSeparado(pedido.id, user.id, user.email);
+      alert('Pedido marcado como separado!');
       carregarPedidos();
     } catch (error) {
-      alert('Erro ao iniciar separação: ' + error.message);
+      alert('Erro ao marcar como separado: ' + error.message);
     }
   };
 
-  const concluirSeparacao = async () => {
+  const marcarComoEnviado = async (pedido) => {
+    const observacoes = prompt('Observações sobre o envio (opcional):');
     try {
-      // Apenas itens da loja do separador
-      const itensSeparados = pedidoAtual.itens_pedido_online
-        .filter(item => item.produto_loja === lojaSeparador)
-        .map(item => ({
-          produto_id: item.produto_id,
-          produto_loja: item.produto_loja,
-          quantidade_separada: item.quantidade,
-          observacoes: ''
-        }));
-
-      await onlineService.concluirSeparacao(
-        pedidoAtual.separacao_pedidos[0]?.id, 
-        itensSeparados,
-        lojaSeparador
-      );
-      
-      setPedidoAtual(null);
+      await caixaOnlineService.marcarPedidoEnviado(pedido.id, user.id, user.email, observacoes);
+      alert('Pedido marcado como enviado!');
       carregarPedidos();
-      alert(`Separação da loja ${lojaSeparador.toUpperCase()} concluída com sucesso!`);
     } catch (error) {
-      alert('Erro ao concluir separação: ' + error.message);
+      alert('Erro ao marcar como enviado: ' + error.message);
     }
   };
 
@@ -152,9 +133,9 @@ export default function SeparadorOnline({ user, onLogout }) {
             style={{ height: '60px', filter: 'brightness(0) invert(1)' }}
           />
           <div>
-            <Logo>SEPARAÇÃO ONLINE - {lojaSeparador.toUpperCase()}</Logo>
+            <Logo>📦 SEPARAÇÃO ONLINE</Logo>
             <div style={{ color: '#cccccc', fontSize: '0.9rem' }}>
-              Separador: {user.nome} | Loja: {lojaSeparador.toUpperCase()}
+              Separador: {user.nome} | Fluxo: Vendedor → Separador → Caixa Online
             </div>
           </div>
         </div>
@@ -162,108 +143,87 @@ export default function SeparadorOnline({ user, onLogout }) {
       </Header>
 
       <Content>
-        {pedidoAtual ? (
-          <>
-            <h2>🔄 Separando Pedido {pedidoAtual.numero_pedido} - Loja {lojaSeparador.toUpperCase()}</h2>
-            
-            <Card>
-              <h3>Informações do Cliente</h3>
-              <p><strong>Nome:</strong> {pedidoAtual.cliente_nome}</p>
-              <p><strong>Telefone:</strong> {pedidoAtual.cliente_telefone}</p>
-              <p><strong>Endereço:</strong> {pedidoAtual.cliente_endereco}</p>
-              <p><strong>Valor Total:</strong> {formatarValor(pedidoAtual.valor_total)}</p>
-            </Card>
+        <Card>
+          <div style={{ background: '#1f2937', border: '1px solid #374151', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+            <h3 style={{ color: '#fbbf24', marginBottom: '10px' }}>⚠️ REGRAS DO SEPARADOR:</h3>
+            <ul style={{ color: '#d1d5db', fontSize: '0.9rem', lineHeight: '1.5' }}>
+              <li>• Apenas o separador pode marcar pedidos como <strong>SEPARADO</strong> e <strong>ENVIADO</strong></li>
+              <li>• Pedidos devem estar no status <strong>CRIADA</strong> para serem separados</li>
+              <li>• Após separar, marque como <strong>ENVIADO</strong> para liberar para o caixa online</li>
+              <li>• Somente pedidos com separado=SIM e enviado=SIM aparecem no caixa</li>
+            </ul>
+          </div>
+        </Card>
 
-            <Card>
-              <h3>Itens para Separar</h3>
-              {pedidoAtual.itens_pedido_online?.map((item, index) => (
-                <div key={index} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '15px',
-                  background: '#222222',
-                  borderRadius: '8px',
-                  marginBottom: '10px'
-                }}>
-                  <div>
-                    <h4>{item.produto_nome}</h4>
-                    <p>Código: {item.produto_codigo}</p>
-                    <p>Loja: {item.produto_loja.toUpperCase()}</p>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>
-                      {item.quantidade}x
-                    </div>
-                    <div>{formatarValor(item.preco_unitario)}</div>
-                  </div>
-                </div>
-              ))}
-            </Card>
-
-            <Card>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <Button className="success" onClick={concluirSeparacao}>
-                  ✅ Concluir Separação
-                </Button>
-                <Button className="danger" onClick={() => setPedidoAtual(null)}>
-                  ❌ Cancelar
-                </Button>
-              </div>
-            </Card>
-          </>
+        <h2>📦 Pedidos para Separação</h2>
+        
+        {pedidosParaSeparar.length === 0 ? (
+          <Card>
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <h3>🎉 Nenhum pedido para separar</h3>
+              <p style={{ color: '#999' }}>Todos os pedidos estão em dia!</p>
+            </div>
+          </Card>
         ) : (
-          <>
-            <h2>📦 Pedidos para Separação - Loja {lojaSeparador.toUpperCase()}</h2>
-            
-            {pedidosParaSeparar.length === 0 ? (
-              <Card>
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <h3>🎉 Nenhum pedido para separar na loja {lojaSeparador.toUpperCase()}</h3>
-                  <p style={{ color: '#999' }}>Todos os pedidos desta loja estão em dia!</p>
-                </div>
-              </Card>
-            ) : (
-              pedidosParaSeparar.map(pedido => (
-                <Card key={pedido.id}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <h3>Pedido {pedido.numero_pedido}</h3>
-                      <p><strong>Cliente:</strong> {pedido.cliente_nome}</p>
-                      <p><strong>Itens:</strong> {pedido.itens_pedido_online?.length || 0}</p>
-                      <p><strong>Data:</strong> {new Date(pedido.data_pedido).toLocaleDateString('pt-BR')}</p>
-                      <div style={{
-                        background: onlineService.getCorStatus(pedido.status),
-                        color: 'white',
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        fontSize: '0.8rem',
-                        display: 'inline-block',
-                        marginTop: '10px'
-                      }}>
-                        {onlineService.formatarStatus(pedido.status)}
-                      </div>
+          pedidosParaSeparar.map(pedido => (
+            <Card key={pedido.id}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3>Pedido {pedido.numero_pedido}</h3>
+                  <p><strong>Cliente:</strong> {pedido.cliente_nome}</p>
+                  <p><strong>Itens:</strong> {pedido.itens_pedido_online?.length || 0}</p>
+                  <p><strong>Data:</strong> {new Date(pedido.created_at).toLocaleDateString('pt-BR')}</p>
+                  <div style={{
+                    background: caixaOnlineService.getCorStatus(pedido.status),
+                    color: 'white',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontSize: '0.8rem',
+                    display: 'inline-block',
+                    marginTop: '10px'
+                  }}>
+                    {caixaOnlineService.formatarStatus(pedido.status)}
+                  </div>
+                  <div style={{ marginTop: '10px', fontSize: '0.8rem' }}>
+                    <div style={{ color: pedido.pedido_separado === 'SIM' ? '#10b981' : '#ef4444' }}>
+                      {pedido.pedido_separado === 'SIM' ? '✅' : '❌'} Separado: {pedido.pedido_separado}
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981', marginBottom: '10px' }}>
-                        {formatarValor(pedido.valor_total)}
-                      </div>
+                    <div style={{ color: pedido.enviado === 'SIM' ? '#10b981' : '#ef4444' }}>
+                      {pedido.enviado === 'SIM' ? '✅' : '❌'} Enviado: {pedido.enviado}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981', marginBottom: '10px' }}>
+                    {formatarValor(pedido.valor_total)}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {pedido.status === 'CRIADA' && (
                       <Button 
                         className="success" 
-                        onClick={() => iniciarSeparacao(pedido)}
-                        disabled={pedido.status === 'separando' && pedido.separacao_pedidos?.[0]?.separador_id !== user.id}
+                        onClick={() => marcarComoSeparado(pedido)}
                       >
-                        {pedido.status === 'separando' && pedido.separacao_pedidos?.[0]?.separador_id === user.id
-                          ? '🔄 Continuar Separação'
-                          : '📦 Iniciar Separação'
-                        }
+                        ✅ Marcar como Separado
                       </Button>
-                    </div>
+                    )}
+                    {pedido.status === 'SEPARADO' && pedido.pedido_separado === 'SIM' && (
+                      <Button 
+                        className="warning" 
+                        onClick={() => marcarComoEnviado(pedido)}
+                      >
+                        🚚 Marcar como Enviado
+                      </Button>
+                    )}
+                    {pedido.status === 'ENVIADO' && (
+                      <div style={{ color: '#10b981', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                        ✅ Pronto para Caixa Online
+                      </div>
+                    )}
                   </div>
-                </Card>
-              ))
-            )}
-          </>
+                </div>
+              </div>
+            </Card>
+          ))
         )}
       </Content>
     </Container>
