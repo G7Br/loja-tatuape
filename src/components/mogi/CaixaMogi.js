@@ -5,7 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { renderEstoquePage, renderSaidaValoresPage, renderVendedoresPage } from '../CaixaPages';
 import ComprovanteVendaMogi from './ComprovanteVendaMogi';
 import CaixaControllerMogi from './CaixaControllerMogi';
-import SistemaVendasMogi from './SistemaVendasMogi';
+import SistemaVendasMogi from './SistemaVendasMogi_fixed';
 import HistoricoCaixaMogi from './HistoricoCaixaMogi';
 import { getBrasiliaDateOnly, formatBrasiliaDateTime, formatBrasiliaTime, formatCurrency, createBrasiliaTimestamp } from '../../utils/dateUtils';
 
@@ -518,7 +518,7 @@ export default function CaixaMogi({ user, onLogout }) {
       const [vendasRes, produtosRes, vendedoresRes, clientesRes, historicoRes] = await Promise.all([
         supabase.from('vendas_mogi').select('*').eq('forma_pagamento', 'pendente_caixa').neq('status', 'cancelada').order('data_venda', { ascending: false }),
         supabase.from('produtos_mogi').select('*').eq('ativo', true),
-        supabase.from('usuarios_mogi').select('*').eq('tipo', 'vendedor'),
+        supabase.from('usuarios_mogi').select('*').eq('tipo', 'vendedor').eq('ativo', true),
         supabase.from('vendas_mogi').select('cliente_nome, cliente_telefone, data_venda').neq('forma_pagamento', 'pendente_caixa').order('data_venda', { ascending: false }),
         supabase.from('vendas_mogi').select('*').neq('forma_pagamento', 'pendente_caixa').order('data_venda', { ascending: false }).limit(100)
       ]);
