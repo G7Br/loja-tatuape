@@ -10,6 +10,7 @@ import CaixaControllerMogi from './CaixaControllerMogi';
 import SistemaVendasMogi from './SistemaVendasMogi_fixed';
 import HistoricoCaixaMogi from './HistoricoCaixaMogi';
 import { getBrasiliaDateOnly, formatBrasiliaDateTime, formatBrasiliaTime, formatCurrency, createBrasiliaTimestamp } from '../../utils/dateUtils';
+import { fechamentoAutomaticoService } from '../../utils/fechamentoAutomaticoService';
 
 // Função auxiliar para formatar moeda
 const formatMoney = (value) => {
@@ -409,6 +410,10 @@ export default function CaixaMogi({ user, onLogout }) {
     verificarCaixaAberto();
     carregarHistoricoRegistros();
     carregarHistoricoSaidas();
+    
+    // Iniciar serviço de fechamento automático
+    fechamentoAutomaticoService.iniciar();
+    
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     
     const dataTimer = setInterval(() => {
@@ -418,6 +423,7 @@ export default function CaixaMogi({ user, onLogout }) {
     return () => {
       clearInterval(timer);
       clearInterval(dataTimer);
+      fechamentoAutomaticoService.parar();
     };
   }, []);
 

@@ -432,118 +432,255 @@ export default function VendedorOnlineNovo({ user, onLogout }) {
             </div>
             
             {/* PRODUTOS */}
-            <div style={{ display: 'grid', gap: '0.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
               {produtosFiltrados.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: darkMode ? '#888' : '#666' }}>
+                <div style={{ 
+                  gridColumn: '1 / -1',
+                  textAlign: 'center', 
+                  padding: '2rem', 
+                  color: darkMode ? '#888' : '#666' 
+                }}>
                   <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔍</div>
                   <p style={{ margin: 0, fontSize: '0.9rem' }}>
                     {busca ? `Nenhum produto encontrado para "${busca}"` : 'Nenhum produto nesta categoria'}
                   </p>
                 </div>
               ) : (
-                produtosFiltrados.map(produto => (
-                  <div key={`${produto.nome}_${produto.loja_origem}`} style={{
-                    background: darkMode ? '#2a2a2a' : '#f8f9fa',
-                    border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
-                    borderRadius: '8px',
-                    overflow: 'hidden'
-                  }}>
-                    {/* CABEÇALHO */}
-                    <div 
-                      onClick={() => setProdutoSelecionado(produtoSelecionado === `${produto.nome}_${produto.loja_origem}` ? null : `${produto.nome}_${produto.loja_origem}`)}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '1rem',
-                        cursor: 'pointer',
-                        background: produtoSelecionado === `${produto.nome}_${produto.loja_origem}` ? (darkMode ? '#333' : '#e5e7eb') : 'transparent'
-                      }}
+                produtosFiltrados.map(produto => {
+                  // Pegar a primeira variação para mostrar a foto
+                  const primeiraVariacao = produto.variacoes[0];
+                  const produtoCompleto = produtos.find(p => p.id === primeiraVariacao?.id);
+                  
+                  return (
+                    <div key={`${produto.nome}_${produto.loja_origem}`} style={{
+                      background: darkMode ? '#2a2a2a' : '#f8f9fa',
+                      border: `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
                     >
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>{produto.nome}</div>
-                        <div style={{ fontSize: '0.8rem', color: darkMode ? '#888' : '#666' }}>
-                          {produto.tipo} • {produto.loja_origem.toUpperCase()} • {produto.variacoes.length} opção{produto.variacoes.length > 1 ? 'ões' : ''}
+                      {/* FOTO GRANDE DO PRODUTO */}
+                      <div style={{
+                        width: '100%',
+                        height: '250px',
+                        backgroundColor: darkMode ? '#1a1a1a' : '#e5e7eb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                        position: 'relative'
+                      }}>
+                        {produtoCompleto?.foto_url ? (
+                          <img 
+                            src={produtoCompleto.foto_url} 
+                            alt={produto.nome}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover'
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div style={{
+                          width: '100%',
+                          height: '100%',
+                          display: produtoCompleto?.foto_url ? 'none' : 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexDirection: 'column',
+                          fontSize: '4rem',
+                          color: darkMode ? '#666' : '#999'
+                        }}>
+                          📷
+                          <div style={{ fontSize: '0.8rem', marginTop: '10px' }}>Sem foto</div>
+                        </div>
+                        
+                        {/* Badge da loja */}
+                        <div style={{
+                          position: 'absolute',
+                          top: '10px',
+                          right: '10px',
+                          background: produto.loja_origem === 'tatuape' ? '#10b981' : '#3b82f6',
+                          color: 'white',
+                          padding: '4px 12px',
+                          borderRadius: '20px',
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold',
+                          textTransform: 'uppercase'
+                        }}>
+                          {produto.loja_origem}
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '1rem', fontWeight: '600', color: '#10b981' }}>
+                      
+                      {/* INFORMAÇÕES DO PRODUTO */}
+                      <div style={{ padding: '1rem' }}>
+                        <div style={{ marginBottom: '12px' }}>
+                          <h3 style={{ 
+                            margin: 0, 
+                            fontSize: '1.1rem', 
+                            fontWeight: '600',
+                            lineHeight: '1.3',
+                            color: darkMode ? '#ffffff' : '#000000'
+                          }}>
+                            {produto.nome}
+                          </h3>
+                          <div style={{ 
+                            fontSize: '0.8rem', 
+                            color: darkMode ? '#888' : '#666',
+                            marginTop: '4px'
+                          }}>
+                            {produto.tipo} • {produto.variacoes.length} opção{produto.variacoes.length > 1 ? 'ões' : ''}
+                          </div>
+                        </div>
+                        
+                        {/* PREÇO DESTACADO */}
+                        <div style={{
+                          fontSize: '1.4rem',
+                          fontWeight: 'bold',
+                          color: '#10b981',
+                          marginBottom: '15px',
+                          textAlign: 'center'
+                        }}>
                           R$ {parseFloat(produto.preco_venda).toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: darkMode ? '#888' : '#666' }}>
-                          {produtoSelecionado === `${produto.nome}_${produto.loja_origem}` ? '▲' : '▼'}
-                        </div>
+                        
+                        {/* BOTÃO EXPANDIR */}
+                        <button
+                          onClick={() => setProdutoSelecionado(
+                            produtoSelecionado === `${produto.nome}_${produto.loja_origem}` 
+                              ? null 
+                              : `${produto.nome}_${produto.loja_origem}`
+                          )}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: produtoSelecionado === `${produto.nome}_${produto.loja_origem}` 
+                              ? '#3b82f6' 
+                              : (darkMode ? '#333' : '#e5e7eb'),
+                            color: produtoSelecionado === `${produto.nome}_${produto.loja_origem}` 
+                              ? '#ffffff' 
+                              : (darkMode ? '#ffffff' : '#000000'),
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            fontWeight: '600',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          {produtoSelecionado === `${produto.nome}_${produto.loja_origem}` 
+                            ? 'Ocultar Opções ▲' 
+                            : 'Ver Opções ▼'
+                          }
+                        </button>
+                        
+                        {/* VARIAÇÕES EXPANDIDAS */}
+                        {produtoSelecionado === `${produto.nome}_${produto.loja_origem}` && (
+                          <div style={{
+                            marginTop: '15px',
+                            borderTop: `1px solid ${darkMode ? '#444' : '#d1d5db'}`,
+                            paddingTop: '15px'
+                          }}>
+                            <div style={{ 
+                              fontSize: '0.9rem', 
+                              fontWeight: '600', 
+                              marginBottom: '10px',
+                              color: darkMode ? '#ffffff' : '#000000'
+                            }}>
+                              Escolha uma opção:
+                            </div>
+                            {produto.variacoes.map(variacao => {
+                              const itemNoCarrinho = carrinho.find(item => item.id === variacao.id);
+                              return (
+                                <div 
+                                  key={variacao.id}
+                                  onClick={() => {
+                                    const produtoCompleto = produtos.find(p => p.id === variacao.id);
+                                    if (produtoCompleto) adicionarAoCarrinho(produtoCompleto);
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '12px',
+                                    margin: '6px 0',
+                                    background: itemNoCarrinho
+                                      ? (darkMode ? '#1e3a8a' : '#dbeafe') 
+                                      : (darkMode ? '#1a1a1a' : '#ffffff'),
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    border: itemNoCarrinho
+                                      ? '2px solid #3b82f6'
+                                      : `1px solid ${darkMode ? '#333' : '#e5e7eb'}`,
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                >
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ 
+                                      fontWeight: '500', 
+                                      fontSize: '0.85rem',
+                                      color: darkMode ? '#ffffff' : '#000000'
+                                    }}>
+                                      {variacao.cor && `${variacao.cor}`}
+                                      {variacao.cor && variacao.tamanho && ' • '}
+                                      {variacao.tamanho && `Tam. ${variacao.tamanho}`}
+                                    </div>
+                                    <div style={{ 
+                                      fontSize: '0.7rem', 
+                                      color: darkMode ? '#888' : '#666',
+                                      marginTop: '2px'
+                                    }}>
+                                      {variacao.codigo} • Estoque: {variacao.estoque_atual}
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ 
+                                      fontWeight: '600', 
+                                      color: '#10b981', 
+                                      fontSize: '0.9rem' 
+                                    }}>
+                                      R$ {parseFloat(variacao.preco_venda).toFixed(2)}
+                                    </div>
+                                    {itemNoCarrinho && (
+                                      <div style={{
+                                        background: '#10b981',
+                                        color: '#ffffff',
+                                        borderRadius: '50%',
+                                        width: '24px',
+                                        height: '24px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.8rem',
+                                        fontWeight: '600'
+                                      }}>
+                                        {itemNoCarrinho.quantidade}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    
-                    {/* VARIAÇÕES */}
-                    {produtoSelecionado === `${produto.nome}_${produto.loja_origem}` && (
-                      <div style={{
-                        borderTop: `1px solid ${darkMode ? '#444' : '#d1d5db'}`,
-                        padding: '0.5rem'
-                      }}>
-                        {produto.variacoes.map(variacao => (
-                          <div 
-                            key={variacao.id}
-                            onClick={() => {
-                              const produtoCompleto = produtos.find(p => p.id === variacao.id);
-                              if (produtoCompleto) adicionarAoCarrinho(produtoCompleto);
-                            }}
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              padding: '0.75rem',
-                              margin: '0.25rem',
-                              background: carrinho.find(item => item.id === variacao.id) 
-                                ? (darkMode ? '#1e3a8a' : '#dbeafe') 
-                                : (darkMode ? '#1a1a1a' : '#ffffff'),
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              border: carrinho.find(item => item.id === variacao.id)
-                                ? '1px solid #3b82f6'
-                                : `1px solid ${darkMode ? '#333' : '#e5e7eb'}`
-                            }}
-                          >
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: '500', fontSize: '0.85rem' }}>
-                                {variacao.cor && `${variacao.cor}`}
-                                {variacao.cor && variacao.tamanho && ' • '}
-                                {variacao.tamanho && `Tam. ${variacao.tamanho}`}
-                              </div>
-                              <div style={{ fontSize: '0.7rem', color: darkMode ? '#888' : '#666' }}>
-                                {variacao.codigo} • Estoque: {variacao.estoque_atual}
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontWeight: '600', color: '#10b981', fontSize: '0.9rem' }}>
-                                  R$ {parseFloat(variacao.preco_venda).toFixed(2)}
-                                </div>
-                              </div>
-                              {carrinho.find(item => item.id === variacao.id) && (
-                                <div style={{
-                                  background: '#10b981',
-                                  color: '#ffffff',
-                                  borderRadius: '50%',
-                                  width: '20px',
-                                  height: '20px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: '0.7rem',
-                                  fontWeight: '600'
-                                }}>
-                                  {carrinho.find(item => item.id === variacao.id)?.quantidade}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </>

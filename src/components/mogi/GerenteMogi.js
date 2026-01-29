@@ -12,6 +12,7 @@ import RelatorioBlackFridayMogi from './RelatorioBlackFridayMogi';
 import TrocarSenhaUsuarios from '../../../ferramentas/TrocarSenhaUsuarios';
 import AdicionarVendedor from '../../../ferramentas/AdicionarVendedor';
 import GerenciarVendedores from '../../../ferramentas/GerenciarVendedores';
+import GerenciarFotosProdutos from '../GerenciarFotosProdutos';
 
 // Helper para queries Mogi
 const queryWithStoreMogi = (table) => supabase.from(`${table}_mogi`);
@@ -99,6 +100,7 @@ const Tab = styled.button`
 const ContentArea = styled.div`
   flex: 1;
   padding: 20px;
+  padding-bottom: 100px; /* Adiciona espaço extra no final para evitar corte do dropdown */
   overflow-y: auto;
   width: 100%;
   
@@ -117,6 +119,7 @@ const ContentArea = styled.div`
   
   @media (max-width: 768px) {
     padding: 15px 10px;
+    padding-bottom: 120px; /* Mais espaço no mobile */
     
     .mobile-show {
       display: block !important;
@@ -325,9 +328,15 @@ const DropdownMenu = styled.div`
   border: 1px solid #333;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  z-index: 100;
+  z-index: 1000; /* Aumenta z-index para ficar acima de outros elementos */
   min-width: 180px;
   overflow: hidden;
+  
+  /* Ajusta posição se estiver muito próximo da borda inferior */
+  &.dropdown-up {
+    top: auto;
+    bottom: 100%;
+  }
   
   @media (max-width: 768px) {
     min-width: 220px;
@@ -443,7 +452,7 @@ export default function Gerente({ user, onLogout }) {
     vendedor_id: '', meta_mensal: '', meta_loja: ''
   });
   const [novoProduto, setNovoProduto] = useState({
-    nome: '', tipo: '', cor: '', tamanho: '', preco_venda: '', estoque_atual: ''
+    nome: '', tipo: '', cor: '', tamanho: '', preco_venda: '', estoque_atual: '', foto_url: ''
   });
   const [modalAberto, setModalAberto] = useState(null);
   const [produtoEditando, setProdutoEditando] = useState(null);
@@ -464,6 +473,7 @@ export default function Gerente({ user, onLogout }) {
   const [showCategoriaModal, setShowCategoriaModal] = useState(false);
   const [produtoQRCode, setProdutoQRCode] = useState(null);
   const [showQRCodeLote, setShowQRCodeLote] = useState(false);
+  const [produtoFoto, setProdutoFoto] = useState(null);
   const [relatorios, setRelatorios] = useState({
     vendasDia: [],
     vendasSemana: [],
@@ -818,13 +828,14 @@ export default function Gerente({ user, onLogout }) {
         cor: novoProduto.cor,
         tamanho: novoProduto.tamanho,
         preco_venda: parseFloat(novoProduto.preco_venda),
-        estoque_atual: parseInt(novoProduto.estoque_atual) || 0
+        estoque_atual: parseInt(novoProduto.estoque_atual) || 0,
+        foto_url: novoProduto.foto_url || null
       }]);
       
       if (error) throw error;
       
       alert('Produto adicionado com sucesso!');
-      setNovoProduto({ nome: '', tipo: '', cor: '', tamanho: '', preco_venda: '', estoque_atual: '' });
+      setNovoProduto({ nome: '', tipo: '', cor: '', tamanho: '', preco_venda: '', estoque_atual: '', foto_url: '' });
       carregarDados();
     } catch (error) {
       alert('Erro ao adicionar produto: ' + error.message);
@@ -874,7 +885,8 @@ export default function Gerente({ user, onLogout }) {
           cor: produto.cor,
           tamanho: produto.tamanho,
           preco_venda: parseFloat(produto.preco_venda),
-          estoque_atual: parseInt(produto.estoque_atual)
+          estoque_atual: parseInt(produto.estoque_atual),
+          foto_url: produto.foto_url || null
         })
         .eq('id', produto.id);
       
@@ -1451,6 +1463,7 @@ export default function Gerente({ user, onLogout }) {
               <Input placeholder="Tamanho" value={novoProduto.tamanho} onChange={(e) => setNovoProduto({...novoProduto, tamanho: e.target.value})} />
               <Input placeholder="Preço *" type="number" step="0.01" value={novoProduto.preco_venda} onChange={(e) => setNovoProduto({...novoProduto, preco_venda: e.target.value})} />
               <Input placeholder="Estoque Inicial" type="number" value={novoProduto.estoque_atual} onChange={(e) => setNovoProduto({...novoProduto, estoque_atual: e.target.value})} />
+              <Input placeholder="URL da Foto (opcional)" value={novoProduto.foto_url} onChange={(e) => setNovoProduto({...novoProduto, foto_url: e.target.value})} />
               <Button onClick={adicionarProduto}>Adicionar Produto</Button>
             </div>
 
@@ -1516,6 +1529,7 @@ export default function Gerente({ user, onLogout }) {
             <Table>
               <thead>
                 <tr>
+                  <Th>Foto</Th>
                   <Th>Código</Th>
                   <Th>Nome</Th>
                   <Th>Categoria</Th>
@@ -1529,6 +1543,38 @@ export default function Gerente({ user, onLogout }) {
               <tbody>
                 {produtosFiltrados.map(p => (
                   <tr key={p.id}>
+                    <Td style={{width: '60px', textAlign: 'center'}}>
+                      {p.foto_url ? (
+                        <img 
+                          src={p.foto_url} 
+                          alt={p.nome}
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            objectFit: 'cover',
+                            borderRadius: '4px',
+                            border: '1px solid #333'
+                          }}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        backgroundColor: '#333',
+                        borderRadius: '4px',
+                        display: p.foto_url ? 'none' : 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        color: '#666'
+                      }}>
+                        📷
+                      </div>
+                    </Td>
                     <Td>{p.codigo}</Td>
                     <Td>{p.nome}</Td>
                     <Td>{p.tipo}</Td>
@@ -1549,7 +1595,19 @@ export default function Gerente({ user, onLogout }) {
                         </DropdownButton>
                         
                         {dropdownAberto === p.id && (
-                          <DropdownMenu onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu 
+                            onClick={(e) => e.stopPropagation()}
+                            className={(() => {
+                              const currentIndex = produtosFiltrados.findIndex(prod => prod.id === p.id);
+                              const isNearEnd = currentIndex >= produtosFiltrados.length - 3;
+                              return isNearEnd ? 'dropdown-up' : '';
+                            })()} 
+                            style={(() => {
+                              const currentIndex = produtosFiltrados.findIndex(prod => prod.id === p.id);
+                              const isNearEnd = currentIndex >= produtosFiltrados.length - 3;
+                              return isNearEnd ? { top: 'auto', bottom: '100%' } : {};
+                            })()} 
+                          >
                             <DropdownItem 
                               className="success"
                               onClick={() => {
@@ -1599,6 +1657,15 @@ export default function Gerente({ user, onLogout }) {
                               }}
                             >
                               Alterar Código
+                            </DropdownItem>
+                            
+                            <DropdownItem 
+                              onClick={() => {
+                                setProdutoFoto(p);
+                                setDropdownAberto(null);
+                              }}
+                            >
+                              Gerenciar Foto
                             </DropdownItem>
                             
                             <DropdownItem 
@@ -2365,11 +2432,17 @@ export default function Gerente({ user, onLogout }) {
             />
             
             <Input 
+              placeholder="Preço"
               type="number"
               step="0.01"
-              placeholder="Preço"
               value={produtoEditando?.preco_venda || ''}
               onChange={(e) => setProdutoEditando({...produtoEditando, preco_venda: e.target.value})}
+            />
+            
+            <Input 
+              placeholder="URL da Foto (opcional)"
+              value={produtoEditando?.foto_url || ''}
+              onChange={(e) => setProdutoEditando({...produtoEditando, foto_url: e.target.value})}
             />
             
             <Input 
@@ -2765,6 +2838,21 @@ export default function Gerente({ user, onLogout }) {
             </div>
           </ModalContent>
         </Modal>
+      )}
+      
+      {/* Modal Gerenciar Fotos Produtos */}
+      {produtoFoto && (
+        <GerenciarFotosProdutos 
+          produto={produtoFoto}
+          onClose={() => setProdutoFoto(null)}
+          onSave={(produtoId, fotoUrl) => {
+            setEstoque(prev => prev.map(p => 
+              p.id === produtoId ? { ...p, foto_url: fotoUrl } : p
+            ));
+          }}
+          supabase={supabase}
+          loja="mogi"
+        />
       )}
       
       {/* Modal QR Code */}

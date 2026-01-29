@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../../utils/supabase';
 import { formatBrasiliaDateTime, formatCurrency } from '../../utils/dateUtils';
+import { fechamentoAutomaticoService } from '../../utils/fechamentoAutomaticoService';
 
 const Container = styled.div`
   padding: 2rem;
@@ -77,13 +78,31 @@ export default function HistoricoCaixaMogi({ user, darkMode }) {
     carregarHistorico();
   }, []);
 
+  const forcarFechamento = async () => {
+    if (window.confirm('Deseja forçar o fechamento automático de caixas em aberto?')) {
+      setLoading(true);
+      const sucesso = await fechamentoAutomaticoService.forcarFechamento();
+      if (sucesso) {
+        alert('✅ Fechamento automático executado com sucesso!');
+        carregarHistorico();
+      } else {
+        alert('❌ Erro ao executar fechamento automático!');
+        setLoading(false);
+      }
+    }
+  };
+
   const carregarHistorico = async () => {
     try {
+      // Executar fechamento automático antes de carregar
+      await supabase.rpc('fechar_caixa_automatico_mogi');
+      
       const { data, error } = await supabase
         .from('fechamentos_caixa_mogi')
         .select('*')
+        .eq('usuario_id', user.id)
         .order('data_fechamento', { ascending: false })
-        .limit(50);
+        .limit(30);
 
       if (error) throw error;
 
@@ -109,9 +128,26 @@ export default function HistoricoCaixaMogi({ user, darkMode }) {
   return (
     <Container>
       <Card darkMode={darkMode}>
-        <h2 style={{ color: darkMode ? '#fff' : '#000', marginBottom: '1.5rem' }}>
-          📊 Histórico de Caixa - Mogi das Cruzes
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h2 style={{ color: darkMode ? '#fff' : '#000', margin: 0 }}>
+            📊 Histórico de Caixa - Mogi das Cruzes
+          </h2>
+          <button
+            onClick={forcarFechamento}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: '#f59e0b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.9rem'
+            }}
+          >
+            🔄 Forçar Fechamento
+          </button>
+        </div>
         
         {historico.length > 0 ? (
           <Table darkMode={darkMode}>
@@ -145,6 +181,11 @@ export default function HistoricoCaixaMogi({ user, darkMode }) {
                   <StatusBadge status={registro.status}>
                     {registro.status === 'aberto' ? '🔓 ABERTO' : '🔒 FECHADO'}
                   </StatusBadge>
+                  {registro.fechamento_automatico && (
+                    <div style={{ fontSize: '0.7rem', color: '#f59e0b', marginTop: '0.25rem' }}>
+                      🤖 Automático
+                    </div>
+                  )}
                 </div>
               </TableRow>
             ))}

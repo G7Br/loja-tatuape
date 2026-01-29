@@ -191,47 +191,110 @@ export default function VendedorOnline({ user, onLogout }) {
         {activeTab === 'catalogo' && (
           <>
             <h2>Catálogo Consolidado - Todas as Lojas</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
               {produtos.map(produto => (
-                <Card key={`${produto.produto_id}-${produto.loja_origem}`}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                    <h3>{produto.produto_nome}</h3>
+                <Card key={`${produto.produto_id}-${produto.loja_origem}`} style={{ padding: '15px' }}>
+                  {/* Foto grande do produto */}
+                  <div style={{
+                    width: '100%',
+                    height: '250px',
+                    backgroundColor: '#222',
+                    borderRadius: '12px',
+                    marginBottom: '15px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    border: '2px solid #333'
+                  }}>
+                    {produto.foto_url ? (
+                      <img 
+                        src={produto.foto_url} 
+                        alt={produto.produto_nome}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      display: produto.foto_url ? 'none' : 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexDirection: 'column',
+                      fontSize: '4rem',
+                      color: '#666'
+                    }}>
+                      📷
+                      <div style={{ fontSize: '0.8rem', marginTop: '10px' }}>Sem foto</div>
+                    </div>
+                  </div>
+                  
+                  {/* Badge da loja */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', lineHeight: '1.3' }}>{produto.produto_nome}</h3>
                     <span style={{
                       background: produto.loja_origem === 'tatuape' ? '#10b981' : '#3b82f6',
                       color: 'white',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '0.8rem',
-                      fontWeight: 'bold'
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      minWidth: '60px',
+                      textAlign: 'center'
                     }}>
                       {produto.loja_origem.toUpperCase()}
                     </span>
                   </div>
-                  <p>Código: {produto.produto_codigo}</p>
-                  <p>Categoria: {produto.categoria_online}</p>
+                  
+                  {/* Informações do produto */}
+                  <div style={{ marginBottom: '15px', fontSize: '0.9rem', color: '#ccc' }}>
+                    <div style={{ marginBottom: '5px' }}><strong>Código:</strong> {produto.produto_codigo}</div>
+                    <div style={{ marginBottom: '5px' }}><strong>Categoria:</strong> {produto.categoria_online}</div>
+                  </div>
+                  
+                  {/* Estoque */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    margin: '10px 0'
+                    margin: '15px 0',
+                    padding: '10px',
+                    background: '#222222',
+                    borderRadius: '8px'
                   }}>
-                    <span>Estoque:</span>
+                    <span style={{ fontWeight: 'bold' }}>Estoque:</span>
                     <span style={{
+                      fontSize: '1.1rem',
                       fontWeight: 'bold',
-                      color: produto.estoque_disponivel > 0 ? '#10b981' : '#ef4444'
+                      color: produto.estoque_disponivel > 5 ? '#10b981' : produto.estoque_disponivel > 0 ? '#f59e0b' : '#ef4444'
                     }}>
-                      {produto.estoque_disponivel} unidades
+                      {produto.estoque_disponivel} un.
                     </span>
                   </div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981', margin: '10px 0' }}>
+                  
+                  {/* Preço */}
+                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#10b981', margin: '15px 0', textAlign: 'center' }}>
                     {formatarValor(produto.preco_online)}
                   </div>
+                  
+                  {/* Botão */}
                   <Button 
                     onClick={() => adicionarAoCarrinho(produto)}
                     disabled={produto.estoque_disponivel === 0}
                     style={{
+                      width: '100%',
                       opacity: produto.estoque_disponivel === 0 ? 0.5 : 1,
-                      cursor: produto.estoque_disponivel === 0 ? 'not-allowed' : 'pointer'
+                      cursor: produto.estoque_disponivel === 0 ? 'not-allowed' : 'pointer',
+                      padding: '12px',
+                      fontSize: '0.9rem'
                     }}
                   >
                     {produto.estoque_disponivel === 0 ? 'Sem Estoque' : 'Adicionar ao Carrinho'}
@@ -245,36 +308,95 @@ export default function VendedorOnline({ user, onLogout }) {
         {activeTab === 'estoque-tatuape' && (
           <>
             <h2>🏢 Estoque Loja Tatuapé</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
               {produtos.filter(p => p.loja_origem === 'tatuape').map(produto => (
-                <Card key={produto.produto_id}>
-                  <h3>{produto.produto_nome}</h3>
-                  <p>Código: {produto.produto_codigo}</p>
-                  <p>Categoria: {produto.categoria_online}</p>
+                <Card key={produto.produto_id} style={{ padding: '15px' }}>
+                  {/* Foto grande do produto */}
+                  <div style={{
+                    width: '100%',
+                    height: '250px',
+                    backgroundColor: '#222',
+                    borderRadius: '12px',
+                    marginBottom: '15px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    border: '2px solid #10b981'
+                  }}>
+                    {produto.foto_url ? (
+                      <img 
+                        src={produto.foto_url} 
+                        alt={produto.produto_nome}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      display: produto.foto_url ? 'none' : 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexDirection: 'column',
+                      fontSize: '4rem',
+                      color: '#666'
+                    }}>
+                      📷
+                      <div style={{ fontSize: '0.8rem', marginTop: '10px' }}>Sem foto</div>
+                    </div>
+                  </div>
+                  
+                  <h3 style={{ margin: '0 0 12px 0', fontSize: '1.1rem', lineHeight: '1.3' }}>{produto.produto_nome}</h3>
+                  
+                  {/* Informações do produto */}
+                  <div style={{ marginBottom: '15px', fontSize: '0.9rem', color: '#ccc' }}>
+                    <div style={{ marginBottom: '5px' }}><strong>Código:</strong> {produto.produto_codigo}</div>
+                    <div style={{ marginBottom: '5px' }}><strong>Categoria:</strong> {produto.categoria_online}</div>
+                  </div>
+                  
+                  {/* Estoque destacado */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     margin: '15px 0',
-                    padding: '10px',
+                    padding: '12px',
                     background: '#222222',
-                    borderRadius: '8px'
+                    borderRadius: '8px',
+                    border: '1px solid #10b981'
                   }}>
-                    <span style={{ fontWeight: 'bold' }}>Estoque Atual:</span>
+                    <span style={{ fontWeight: 'bold', color: '#10b981' }}>Estoque Atual:</span>
                     <span style={{
-                      fontSize: '1.2rem',
+                      fontSize: '1.3rem',
                       fontWeight: 'bold',
                       color: produto.estoque_disponivel > 5 ? '#10b981' : produto.estoque_disponivel > 0 ? '#f59e0b' : '#ef4444'
                     }}>
                       {produto.estoque_disponivel} unidades
                     </span>
                   </div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981', margin: '10px 0' }}>
+                  
+                  {/* Preço */}
+                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#10b981', margin: '15px 0', textAlign: 'center' }}>
                     {formatarValor(produto.preco_online)}
                   </div>
+                  
+                  {/* Botão */}
                   <Button 
                     onClick={() => adicionarAoCarrinho(produto)}
                     disabled={produto.estoque_disponivel === 0}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      fontSize: '0.9rem'
+                    }}
                   >
                     {produto.estoque_disponivel === 0 ? 'Sem Estoque' : 'Adicionar ao Carrinho'}
                   </Button>
@@ -287,36 +409,95 @@ export default function VendedorOnline({ user, onLogout }) {
         {activeTab === 'estoque-mogi' && (
           <>
             <h2>🏪 Estoque Loja Mogi das Cruzes</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
               {produtos.filter(p => p.loja_origem === 'mogi').map(produto => (
-                <Card key={produto.produto_id}>
-                  <h3>{produto.produto_nome}</h3>
-                  <p>Código: {produto.produto_codigo}</p>
-                  <p>Categoria: {produto.categoria_online}</p>
+                <Card key={produto.produto_id} style={{ padding: '15px' }}>
+                  {/* Foto grande do produto */}
+                  <div style={{
+                    width: '100%',
+                    height: '250px',
+                    backgroundColor: '#222',
+                    borderRadius: '12px',
+                    marginBottom: '15px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    border: '2px solid #3b82f6'
+                  }}>
+                    {produto.foto_url ? (
+                      <img 
+                        src={produto.foto_url} 
+                        alt={produto.produto_nome}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      display: produto.foto_url ? 'none' : 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexDirection: 'column',
+                      fontSize: '4rem',
+                      color: '#666'
+                    }}>
+                      📷
+                      <div style={{ fontSize: '0.8rem', marginTop: '10px' }}>Sem foto</div>
+                    </div>
+                  </div>
+                  
+                  <h3 style={{ margin: '0 0 12px 0', fontSize: '1.1rem', lineHeight: '1.3' }}>{produto.produto_nome}</h3>
+                  
+                  {/* Informações do produto */}
+                  <div style={{ marginBottom: '15px', fontSize: '0.9rem', color: '#ccc' }}>
+                    <div style={{ marginBottom: '5px' }}><strong>Código:</strong> {produto.produto_codigo}</div>
+                    <div style={{ marginBottom: '5px' }}><strong>Categoria:</strong> {produto.categoria_online}</div>
+                  </div>
+                  
+                  {/* Estoque destacado */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     margin: '15px 0',
-                    padding: '10px',
+                    padding: '12px',
                     background: '#222222',
-                    borderRadius: '8px'
+                    borderRadius: '8px',
+                    border: '1px solid #3b82f6'
                   }}>
-                    <span style={{ fontWeight: 'bold' }}>Estoque Atual:</span>
+                    <span style={{ fontWeight: 'bold', color: '#3b82f6' }}>Estoque Atual:</span>
                     <span style={{
-                      fontSize: '1.2rem',
+                      fontSize: '1.3rem',
                       fontWeight: 'bold',
                       color: produto.estoque_disponivel > 5 ? '#10b981' : produto.estoque_disponivel > 0 ? '#f59e0b' : '#ef4444'
                     }}>
                       {produto.estoque_disponivel} unidades
                     </span>
                   </div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981', margin: '10px 0' }}>
+                  
+                  {/* Preço */}
+                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#10b981', margin: '15px 0', textAlign: 'center' }}>
                     {formatarValor(produto.preco_online)}
                   </div>
+                  
+                  {/* Botão */}
                   <Button 
                     onClick={() => adicionarAoCarrinho(produto)}
                     disabled={produto.estoque_disponivel === 0}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      fontSize: '0.9rem'
+                    }}
                   >
                     {produto.estoque_disponivel === 0 ? 'Sem Estoque' : 'Adicionar ao Carrinho'}
                   </Button>
