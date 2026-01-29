@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../utils/supabase';
 import * as XLSX from 'xlsx';
+import GerenciadorLojas from './GerenciadorLojas';
+import DashboardConsolidado from './DashboardConsolidado';
 
 const Container = styled.div`
   width: 100%;
@@ -171,7 +173,7 @@ const MetricCard = styled.div`
 `;
 
 export default function CEO({ user, onLogout }) {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('dashboard-consolidado');
   const [loading, setLoading] = useState(true);
   const [dadosConsolidados, setDadosConsolidados] = useState({
     tatuape: { vendas: [], funcionarios: [], produtos: [], caixa: [] },
@@ -495,8 +497,11 @@ export default function CEO({ user, onLogout }) {
       </Header>
 
       <TabContainer>
+        <Tab $active={activeTab === 'dashboard-consolidado'} onClick={() => setActiveTab('dashboard-consolidado')}>
+          Dashboard Consolidado
+        </Tab>
         <Tab $active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')}>
-          Dashboard
+          Dashboard Detalhado
         </Tab>
         <Tab $active={activeTab === 'vendas-tatuape'} onClick={() => setActiveTab('vendas-tatuape')}>
           Vendas Tatuapé
@@ -519,9 +524,16 @@ export default function CEO({ user, onLogout }) {
         <Tab $active={activeTab === 'financeiro'} onClick={() => setActiveTab('financeiro')}>
           Financeiro
         </Tab>
+        <Tab $active={activeTab === 'gerenciar-lojas'} onClick={() => setActiveTab('gerenciar-lojas')}>
+          Gerenciar Lojas
+        </Tab>
       </TabContainer>
 
       <ContentArea>
+        {activeTab === 'dashboard-consolidado' && (
+          <DashboardConsolidado />
+        )}
+
         {activeTab === 'dashboard' && (
           <>
             <h2 style={{marginBottom: '30px', color: '#ffffff'}}>📊 Dashboard Executivo</h2>
@@ -816,6 +828,10 @@ export default function CEO({ user, onLogout }) {
               </MetricCard>
             </div>
           </>
+        )}
+
+        {activeTab === 'gerenciar-lojas' && (
+          <GerenciadorLojas />
         )}
       </ContentArea>
     </Container>

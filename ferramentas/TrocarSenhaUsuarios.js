@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../src/utils/supabase';
-import { supabase as supabaseMogi } from '../src/utils/supabaseMogi';
 
 const TrocarSenhaUsuarios = ({ loja = 'tatuape' }) => {
   const [usuarios, setUsuarios] = useState([]);
@@ -10,8 +9,7 @@ const TrocarSenhaUsuarios = ({ loja = 'tatuape' }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Selecionar o supabase correto baseado na loja
-  const supabaseClient = loja === 'mogi' ? supabaseMogi : supabase;
+  // Definir tabela baseada na loja
   const tabela = loja === 'mogi' ? 'usuarios_mogi' : 'usuarios_tatuape';
 
   useEffect(() => {
@@ -20,7 +18,7 @@ const TrocarSenhaUsuarios = ({ loja = 'tatuape' }) => {
 
   const carregarUsuarios = async () => {
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from(tabela)
         .select('id, nome, email, tipo')
         .order('nome');
@@ -52,7 +50,7 @@ const TrocarSenhaUsuarios = ({ loja = 'tatuape' }) => {
 
     setLoading(true);
     try {
-      const { error } = await supabaseClient
+      const { error } = await supabase
         .from(tabela)
         .update({ senha: novaSenha })
         .eq('id', usuarioSelecionado);

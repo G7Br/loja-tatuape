@@ -10,6 +10,8 @@ import GeradorQRCode from './GeradorQRCode';
 import GeradorQRCodeLote from './GeradorQRCodeLote';
 import RelatorioBlackFriday from './RelatorioBlackFriday';
 import TrocarSenhaUsuarios from '../../ferramentas/TrocarSenhaUsuarios';
+import AdicionarVendedor from '../../ferramentas/AdicionarVendedor';
+import GerenciarVendedores from '../../ferramentas/GerenciarVendedores';
 
 
 // MESMOS ESTILOS DO SISTEMA PRINCIPAL
@@ -2039,6 +2041,64 @@ export default function Gerente({ user, onLogout }) {
                 }}>Ferramenta para alterar senhas de vendedores, gerentes e outros usuários do sistema</p>
               </div>
 
+              <div style={{
+                background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                border: '2px solid #10b981',
+                borderRadius: '12px',
+                padding: '25px',
+                cursor: 'pointer',
+                transition: 'transform 0.2s ease'
+              }}
+              onClick={() => setActiveTab('adicionarvendedor')}
+              onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
+              onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+              >
+                <div style={{
+                  fontSize: '3rem',
+                  marginBottom: '15px',
+                  textAlign: 'center'
+                }}>👤</div>
+                <h3 style={{
+                  color: '#10b981',
+                  marginBottom: '10px',
+                  textAlign: 'center'
+                }}>Adicionar Novo Vendedor</h3>
+                <p style={{
+                  color: '#cccccc',
+                  textAlign: 'center',
+                  fontSize: '0.9rem'
+                }}>Sistema para cadastrar novos vendedores, gerentes e usuários do caixa</p>
+              </div>
+
+              <div style={{
+                background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                border: '2px solid #8b5cf6',
+                borderRadius: '12px',
+                padding: '25px',
+                cursor: 'pointer',
+                transition: 'transform 0.2s ease'
+              }}
+              onClick={() => setActiveTab('gerenciarvendedores')}
+              onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
+              onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+              >
+                <div style={{
+                  fontSize: '3rem',
+                  marginBottom: '15px',
+                  textAlign: 'center'
+                }}>👥</div>
+                <h3 style={{
+                  color: '#8b5cf6',
+                  marginBottom: '10px',
+                  textAlign: 'center'
+                }}>Gerenciar Vendedores</h3>
+                <p style={{
+                  color: '#cccccc',
+                  textAlign: 'center',
+                  fontSize: '0.9rem'
+                }}>Visualizar, editar, ativar/desativar e gerenciar todos os usuários do sistema</p>
+              </div>
+
 
             </div>
           </div>
@@ -2091,6 +2151,56 @@ export default function Gerente({ user, onLogout }) {
               </button>
             </div>
             <TrocarSenhaUsuarios loja="tatuape" />
+          </div>
+        )}
+
+        {activeTab === 'adicionarvendedor' && (
+          <div>
+            <div style={{marginBottom: '20px'}}>
+              <button
+                onClick={() => setActiveTab('ferramentas')}
+                style={{
+                  background: '#333',
+                  color: '#fff',
+                  border: '1px solid #555',
+                  borderRadius: '6px',
+                  padding: '10px 15px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                ← Voltar para Ferramentas
+              </button>
+            </div>
+            <AdicionarVendedor loja="tatuape" />
+          </div>
+        )}
+
+        {activeTab === 'gerenciarvendedores' && (
+          <div>
+            <div style={{marginBottom: '20px'}}>
+              <button
+                onClick={() => setActiveTab('ferramentas')}
+                style={{
+                  background: '#333',
+                  color: '#fff',
+                  border: '1px solid #555',
+                  borderRadius: '6px',
+                  padding: '10px 15px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                ← Voltar para Ferramentas
+              </button>
+            </div>
+            <GerenciarVendedores loja="tatuape" />
           </div>
         )}
 
