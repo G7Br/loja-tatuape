@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { onlineService } from '../../utils/onlineService';
+import GerenciarFotosOnline from './GerenciarFotosOnline';
 
 const Container = styled.div`
   width: 100%;
@@ -112,9 +113,11 @@ export default function GerenteOnline({ user, onLogout }) {
   const [dashboard, setDashboard] = useState({});
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statusFotos, setStatusFotos] = useState([]);
 
   useEffect(() => {
     carregarDados();
+    verificarStatusFotos();
   }, []);
 
   const carregarDados = async () => {
@@ -130,6 +133,28 @@ export default function GerenteOnline({ user, onLogout }) {
       console.error('Erro ao carregar dados:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sincronizarFotos = async () => {
+    try {
+      setLoading(true);
+      const resultado = await onlineService.sincronizarFotosComLojas();
+      alert(`Fotos sincronizadas! ${resultado.produtosSincronizados} produtos atualizados (Tatuapé: ${resultado.tatuapeCount}, Mogi: ${resultado.mogiCount})`);
+      await verificarStatusFotos();
+    } catch (error) {
+      alert('Erro ao sincronizar fotos: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verificarStatusFotos = async () => {
+    try {
+      const status = await onlineService.verificarStatusFotos();
+      setStatusFotos(status);
+    } catch (error) {
+      console.error('Erro ao verificar status das fotos:', error);
     }
   };
 
@@ -191,6 +216,9 @@ export default function GerenteOnline({ user, onLogout }) {
         </Tab>
         <Tab $active={activeTab === 'estoque'} onClick={() => setActiveTab('estoque')}>
           Estoque Online
+        </Tab>
+        <Tab $active={activeTab === 'fotos'} onClick={() => setActiveTab('fotos')}>
+          Fotos
         </Tab>
         <Tab $active={activeTab === 'relatorios'} onClick={() => setActiveTab('relatorios')}>
           Relatórios
@@ -316,12 +344,98 @@ export default function GerenteOnline({ user, onLogout }) {
         {activeTab === 'estoque' && (
           <>
             <h2>Controle de Estoque Online</h2>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+              <Card style={{ border: '1px solid #10b981' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <h3 style={{ margin: 0 }}>Sincronização de Estoque</h3>
+                  <Button className="success" onClick={sincronizarEstoque}>
+                    🔄 Sincronizar
+                  </Button>
+                </div>
+                <p style={{ color: '#999', marginBottom: '15px' }}>
+                  Sincronize produtos, preços e estoque das lojas físicas com o catálogo online.
+                </p>
+              </Card>
+              
+              <Card style={{ border: '1px solid #3b82f6' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <h3 style={{ margin: 0 }}>Sincronização de Fotos</h3>
+                  <Button className="primary" onClick={sincronizarFotos}>
+                    📷 Sincronizar Fotos
+                  </Button>
+                </div>
+                <p style={{ color: '#999', marginBottom: '15px' }}>
+                  Sincronize automaticamente as fotos dos produtos das lojas com o catálogo online.
+                </p>
+              </Card>
+            </div>
+            
             <Card>
-              <p>Funcionalidade de controle de estoque em desenvolvimento...</p>
-              <Button className="success" onClick={sincronizarEstoque}>
-                🔄 Sincronizar com Lojas Físicas
-              </Button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3>Status das Fotos por Loja</h3>
+                <Button onClick={verificarStatusFotos}>
+                  🔍 Verificar Status
+                </Button>
+              </div>
+              
+              {statusFotos.length > 0 && (
+                <Table>
+                  <thead>
+                    <tr>
+                      <Th>Loja</Th>
+                      <Th>Total Produtos</Th>
+                      <Th>Com Foto</Th>
+                      <Th>Sem Foto</Th>
+                      <Th>% Com Foto</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {statusFotos.map((status, index) => (
+                      <tr key={index}>
+                        <Td style={{ textTransform: 'capitalize', fontWeight: 'bold' }}>
+                          {status.loja === 'tatuape' ? 'Tatuapé' : status.loja === 'mogi' ? 'Mogi' : 'Online'}
+                        </Td>
+                        <Td>{status.total_produtos}</Td>
+                        <Td style={{ color: '#10b981' }}>{status.com_foto}</Td>
+                        <Td style={{ color: status.sem_foto > 0 ? '#ef4444' : '#10b981' }}>{status.sem_foto}</Td>
+                        <Td>
+                          <span style={{
+                            color: status.percentual_com_foto >= 80 ? '#10b981' : 
+                                   status.percentual_com_foto >= 50 ? '#f59e0b' : '#ef4444',
+                            fontWeight: 'bold'
+                          }}>
+                            {status.percentual_com_foto}%
+                          </span>
+                        </Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
+              
+              <div style={{ 
+                marginTop: '20px', 
+                padding: '15px', 
+                background: '#0a0a0a', 
+                borderRadius: '8px',
+                fontSize: '12px',
+                color: '#ccc'
+              }}>
+                <strong>💡 Sobre a Sincronização Automática:</strong><br/>
+                • As fotos são sincronizadas automaticamente quando os gerentes das lojas definem/alteram fotos<br/>
+                • Use "Sincronizar Fotos" para forçar uma sincronização manual de todas as fotos<br/>
+                • O sistema mantém um log de todas as sincronizações realizadas<br/>
+                • Produtos sem foto aparecerão sem imagem no catálogo online
+              </div>
             </Card>
+          </>
+        )}
+
+        {activeTab === 'fotos' && (
+          <>
+            <h2>Gerenciamento de Fotos</h2>
+            <GerenciarFotosOnline />
           </>
         )}
 

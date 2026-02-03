@@ -4,6 +4,38 @@ import { supabase } from './supabase';
 export const onlineService = {
   
   // ===== CATÁLOGO DE PRODUTOS =====
+  // ===== SINCRONIZAÇÃO DE FOTOS =====
+  async sincronizarFotosComLojas() {
+    try {
+      const { data, error } = await supabase.rpc('sync_todas_fotos_online');
+      
+      if (error) throw error;
+      
+      return {
+        success: true,
+        produtosSincronizados: data[0]?.produtos_sincronizados || 0,
+        tatuapeCount: data[0]?.tatuape_count || 0,
+        mogiCount: data[0]?.mogi_count || 0
+      };
+    } catch (error) {
+      console.error('Erro ao sincronizar fotos:', error);
+      throw error;
+    }
+  },
+
+  async verificarStatusFotos() {
+    try {
+      const { data, error } = await supabase.rpc('verificar_status_fotos');
+      
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error('Erro ao verificar status das fotos:', error);
+      throw error;
+    }
+  },
+
   async getProdutosOnline(filtros = {}) {
     try {
       console.log('Buscando produtos online...');
@@ -28,7 +60,8 @@ export const onlineService = {
           estoque_disponivel: p.estoque_atual || 0,
           preco_online: p.preco_venda,
           categoria_online: p.tipo,
-          ativo_online: p.ativo
+          ativo_online: p.ativo,
+          foto_url: p.foto_url
         })),
         ...(produtosMogi.data || []).map(p => ({
           produto_id: p.id,
@@ -38,7 +71,8 @@ export const onlineService = {
           estoque_disponivel: p.estoque_atual || 0,
           preco_online: p.preco_venda,
           categoria_online: p.tipo,
-          ativo_online: p.ativo
+          ativo_online: p.ativo,
+          foto_url: p.foto_url
         }))
       ];
 
@@ -87,12 +121,16 @@ export const onlineService = {
           estoque_fisico: produto.estoque_atual || 0,
           preco_online: produto.preco_venda,
           categoria_online: produto.tipo,
-          ativo_online: produto.ativo
+          ativo_online: produto.ativo,
+          foto_url: produto.foto_url // Incluir foto na sincronização
         }, { onConflict: 'produto_id,loja_origem' });
       }
 
-      // Atualizar estoque disponível
-      await supabase.rpc('sincronizar_estoque_online');
+      // Atualizar estoque disponível e sincronizar fotos
+      await Promise.all([
+        supabase.rpc('sincronizar_estoque_online'),
+        this.sincronizarFotosComLojas()
+      ]);
       
       return { success: true, sincronizados: produtosParaSincronizar.length };
     } catch (error) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { onlineService } from '../../utils/onlineService';
 import { caixaOnlineService } from '../../utils/caixaOnlineService';
+import AtualizarImagemProduto from './AtualizarImagemProduto';
 
 const Container = styled.div`
   width: 100%;
@@ -100,6 +101,7 @@ export default function VendedorOnline({ user, onLogout }) {
     observacoes: ''
   });
   const [modalFinalizacao, setModalFinalizacao] = useState(false);
+  const [modalImagem, setModalImagem] = useState(null);
 
   useEffect(() => {
     carregarDados();
@@ -242,7 +244,7 @@ export default function VendedorOnline({ user, onLogout }) {
             <h2>Catálogo Consolidado - Todas as Lojas</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
               {produtos.map(produto => (
-                <Card key={`${produto.produto_id}-${produto.loja_origem}`} style={{ padding: '15px' }}>
+                <Card key={`${produto.produto_id}-${produto.loja_origem}`} style={{ padding: '15px', position: 'relative' }}>
                   {/* Foto grande do produto */}
                   <div style={{
                     width: '100%',
@@ -254,8 +256,30 @@ export default function VendedorOnline({ user, onLogout }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     overflow: 'hidden',
-                    border: '2px solid #333'
+                    border: '2px solid #333',
+                    position: 'relative'
                   }}>
+                    {/* Botão atualizar imagem */}
+                    <button
+                      onClick={() => setModalImagem(produto)}
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        background: 'rgba(0,0,0,0.7)',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '35px',
+                        height: '35px',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        zIndex: 10
+                      }}
+                      title="Atualizar imagem"
+                    >
+                      📷
+                    </button>
                     {produto.foto_url ? (
                       <img 
                         src={produto.foto_url} 
@@ -633,6 +657,15 @@ export default function VendedorOnline({ user, onLogout }) {
           </>
         )}
       </Content>
+
+      {/* Modal de Atualização de Imagem */}
+      {modalImagem && (
+        <AtualizarImagemProduto
+          produto={modalImagem}
+          onClose={() => setModalImagem(null)}
+          onUpdate={carregarDados}
+        />
+      )}
 
       {/* Modal de Finalização */}
       {modalFinalizacao && (

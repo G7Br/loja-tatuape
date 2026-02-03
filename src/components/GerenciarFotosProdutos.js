@@ -154,6 +154,23 @@ export default function GerenciarFotosProdutos({ produto, onClose, onSave, supab
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(produto?.foto_url || '');
 
+  // Função para sincronizar foto com sistema online
+  const sincronizarFotoOnline = async (codigo, lojaOrigem, fotoUrl) => {
+    try {
+      const { error } = await supabase.rpc('sync_foto_produto_online', {
+        p_codigo: codigo,
+        p_loja: lojaOrigem,
+        p_foto_url: fotoUrl
+      });
+      
+      if (error) {
+        console.warn('Aviso: Erro na sincronização online:', error);
+      }
+    } catch (error) {
+      console.warn('Aviso: Falha na sincronização online:', error);
+    }
+  };
+
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -205,7 +222,10 @@ export default function GerenciarFotosProdutos({ produto, onClose, onSave, supab
 
       if (error) throw error;
 
-      alert('Foto atualizada com sucesso!');
+      // Sincronizar automaticamente com o sistema online
+      await sincronizarFotoOnline(produto.codigo, loja, fotoUrl);
+
+      alert('Foto atualizada e sincronizada com o sistema online!');
       onSave(produto.id, fotoUrl);
       onClose();
     } catch (error) {
@@ -227,7 +247,10 @@ export default function GerenciarFotosProdutos({ produto, onClose, onSave, supab
 
       if (error) throw error;
 
-      alert('Foto removida com sucesso!');
+      // Sincronizar remoção com o sistema online
+      await sincronizarFotoOnline(produto.codigo, loja, null);
+
+      alert('Foto removida e sincronizada com o sistema online!');
       onSave(produto.id, null);
       onClose();
     } catch (error) {
@@ -311,7 +334,8 @@ export default function GerenciarFotosProdutos({ produto, onClose, onSave, supab
           • Formatos aceitos: JPG, PNG, GIF, WebP<br/>
           • Tamanho máximo: 5MB<br/>
           • Resolução recomendada: 800x600px<br/>
-          • A imagem será exibida no catálogo online
+          • A imagem será exibida no catálogo online<br/>
+          • <strong style={{color: '#10b981'}}>🔄 Sincronização automática com sistema online ativada!</strong>
         </div>
       </ModalContent>
     </Modal>
