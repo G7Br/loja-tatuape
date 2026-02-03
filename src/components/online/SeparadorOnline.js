@@ -96,10 +96,12 @@ export default function SeparadorOnline({ user, onLogout }) {
   };
 
   const marcarComoEnviado = async (pedido) => {
-    const observacoes = prompt('Observações sobre o envio (opcional):');
+    const observacoes = prompt('Observações sobre o envio:');
+    if (observacoes === null) return; // Cancelou
+    
     try {
       await caixaOnlineService.marcarPedidoEnviado(pedido.id, user.id, user.email, observacoes);
-      alert('Pedido marcado como enviado!');
+      alert('Pedido marcado como enviado com observações!');
       carregarPedidos();
     } catch (error) {
       alert('Erro ao marcar como enviado: ' + error.message);
@@ -211,7 +213,7 @@ export default function SeparadorOnline({ user, onLogout }) {
                         className="warning" 
                         onClick={() => marcarComoEnviado(pedido)}
                       >
-                        🚚 Marcar como Enviado
+                        🚚 Enviar com Observação
                       </Button>
                     )}
                     {pedido.status === 'ENVIADO' && (
