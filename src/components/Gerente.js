@@ -9,6 +9,7 @@ import GerenciarFotosVendedores from './GerenciarFotosVendedores';
 import GeradorQRCode from './GeradorQRCode';
 import GeradorQRCodeLote from './GeradorQRCodeLote';
 import RelatorioBlackFriday from './RelatorioBlackFriday';
+import RelatorioMensal from './RelatorioMensal';
 import TrocarSenhaUsuarios from '../../ferramentas/TrocarSenhaUsuarios';
 import AdicionarVendedor from '../../ferramentas/AdicionarVendedor';
 import GerenciarVendedores from '../../ferramentas/GerenciarVendedores';
@@ -2014,6 +2015,35 @@ export default function Gerente({ user, onLogout }) {
 
               <div style={{
                 background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                border: '2px solid #10b981',
+                borderRadius: '12px',
+                padding: '25px',
+                cursor: 'pointer',
+                transition: 'transform 0.2s ease'
+              }}
+              onClick={() => setActiveTab('relatorio-mensal')}
+              onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
+              onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+              >
+                <div style={{
+                  fontSize: '3rem',
+                  marginBottom: '15px',
+                  textAlign: 'center'
+                }}>📈</div>
+                <h3 style={{
+                  color: '#10b981',
+                  marginBottom: '10px',
+                  textAlign: 'center'
+                }}>Relatório por Mês</h3>
+                <p style={{
+                  color: '#cccccc',
+                  textAlign: 'center',
+                  fontSize: '0.9rem'
+                }}>Análise completa das vendas mensais com métricas detalhadas e comparativos</p>
+              </div>
+
+              <div style={{
+                background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
                 border: '2px solid #3b82f6',
                 borderRadius: '12px',
                 padding: '25px',
@@ -2043,7 +2073,7 @@ export default function Gerente({ user, onLogout }) {
 
               <div style={{
                 background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-                border: '2px solid #10b981',
+                border: '2px solid #f59e0b',
                 borderRadius: '12px',
                 padding: '25px',
                 cursor: 'pointer',
@@ -2059,7 +2089,7 @@ export default function Gerente({ user, onLogout }) {
                   textAlign: 'center'
                 }}>👤</div>
                 <h3 style={{
-                  color: '#10b981',
+                  color: '#f59e0b',
                   marginBottom: '10px',
                   textAlign: 'center'
                 }}>Adicionar Novo Vendedor</h3>
@@ -2126,6 +2156,31 @@ export default function Gerente({ user, onLogout }) {
               </button>
             </div>
             <RelatorioBlackFriday />
+          </div>
+        )}
+
+        {activeTab === 'relatorio-mensal' && (
+          <div>
+            <div style={{marginBottom: '20px'}}>
+              <button
+                onClick={() => setActiveTab('ferramentas')}
+                style={{
+                  background: '#333',
+                  color: '#fff',
+                  border: '1px solid #555',
+                  borderRadius: '6px',
+                  padding: '10px 15px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                ← Voltar para Ferramentas
+              </button>
+            </div>
+            <RelatorioMensal />
           </div>
         )}
 
