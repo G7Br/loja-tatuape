@@ -35,13 +35,15 @@ yarn-error.log*
 .cache
 .parcel-cache
 
-# Scripts auxiliares
+# Scripts auxiliares específicos
 exportar-produtos.js
 install-caixa-system.js
 criar-zip-vercel.ps1
 instalar-git.bat
 enviar-github.bat
 comandos-github.txt
+converter_csv_xlsx.js
+processar_costumes.js
 
 # OS files
 .DS_Store
@@ -50,8 +52,5 @@ Thumbs.db
 # Temporary
 tmp/
 temp/
-*.md
 *.xlsx
-*.js
-*.md
 *.md
