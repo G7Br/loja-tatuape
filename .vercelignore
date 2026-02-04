@@ -1,0 +1,17 @@
+node_modules
+.next
+.env.local
+.DS_Store
+*.log
+backups/
+database/
+docs/
+ferramentas/
+public/images/
+relatorio black/
+sql/
+vendedoresfoto/
+*.csv
+*.xlsx
+*.sql
+*.md
